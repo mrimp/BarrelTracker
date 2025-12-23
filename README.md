@@ -3,7 +3,7 @@
 Local-first companion to NodeLab: import NodeLab snapshot JSONs, track barrel round count (incl. sighters), and rank barrels over life.
 
 ## Live app
-GitHub Pages: (link will appear after you enable Pages)
+https://mrimp.github.io/BarrelTracker/
 
 ## Usage
 1. Open the app (GitHub Pages link or open `index.html` locally).
