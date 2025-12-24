@@ -1,3 +1,4 @@
+
 # BarrelTracker — Barrel Registry Specification (v1.0)
 
 This document defines the **barrel registry model** used by BarrelTracker to represent physical barrels, their specifications, and lifecycle state.
