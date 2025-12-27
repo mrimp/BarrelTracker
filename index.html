@@ -1,158 +1,458 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>BarrelTracker</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-
+<title>BarrelTracker — Import-First v4.5 (clean import UX)</title>
 <style>
-:root{
-  --bg:#070a12;
-  --panel:#0b1227;
-  --row:#0f172a;
-  --rowAlt:#0c1324;
-  --text:#e5e7eb;
-  --muted:#94a3b8;
-  --hi:#22c55e;
-  --mod:#f59e0b;
-  --low:#64748b;
-  --bad:#ef4444;
-  --accent:#2563eb;
-  --border:#1f2937;
-  --radius:16px;
-}
-*{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-  background:linear-gradient(180deg,#050812,#020617);
-  color:var(--text);
-}
-header{
-  padding:16px 20px;
-  border-bottom:1px solid var(--border);
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-h1{margin:0;font-size:20px}
-button{
-  background:#020617;
-  color:var(--text);
-  border:1px solid var(--border);
-  border-radius:10px;
-  padding:8px 12px;
-  cursor:pointer;
-}
-button.primary{
-  background:var(--accent);
-  border-color:var(--accent);
-}
-.wrap{
-  max-width:1400px;
-  margin:0 auto;
-  padding:16px;
-}
-.layout{
-  display:grid;
-  grid-template-columns:1.3fr .9fr;
-  gap:16px;
-}
-.panel{
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  overflow:hidden;
-}
-.panelHead{
-  padding:12px 14px;
-  border-bottom:1px solid var(--border);
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-.tableWrap{overflow:auto}
-table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:13px;
-}
-thead th{
-  text-align:left;
-  padding:10px;
-  color:#c7d2fe;
-  border-bottom:1px solid var(--border);
-  white-space:nowrap;
-}
-tbody tr{background:var(--row);cursor:pointer}
-tbody tr:nth-child(even){background:var(--rowAlt)}
-tbody tr:hover{background:#14203d}
-td{
-  padding:10px;
-  border-bottom:1px solid var(--border);
-  white-space:nowrap;
-}
-.glow-high{box-shadow:inset 0 0 0 1px rgba(34,197,94,.35)}
-.glow-mod{box-shadow:inset 0 0 0 1px rgba(245,158,11,.35)}
-.glow-low{box-shadow:inset 0 0 0 1px rgba(100,116,139,.35)}
-.drawer{
-  padding:14px;
-}
-.session{
-  padding:10px;
-  border:1px solid var(--border);
-  border-radius:12px;
-  margin-bottom:10px;
-  background:#020617;
-}
-.small{font-size:12px;color:var(--muted)}
-.chip{
-  display:inline-block;
-  padding:4px 8px;
-  border-radius:999px;
-  border:1px solid var(--border);
-  font-size:11px;
-  margin-right:6px;
-}
-.spark{
-  width:70px;height:16px;
-}
-.spark path{fill:none;stroke:currentColor;stroke-width:2}
+  :root{
+    --bg:#0b0f17;
+    --panel:#0f172a;
+    --panel2:#0b1227;
+    --row:#0f172a;
+    --row-alt:#0c1324;
+    --text:#e5e7eb;
+    --muted:#94a3b8;
+    --hi:#22c55e;
+    --mod:#f59e0b;
+    --low:#64748b;
+    --bad:#ef4444;
+    --border:#1f2937;
+    --accent:#1d4ed8;
+    --accent2:#2563eb;
+    --shadow:0 20px 70px rgba(0,0,0,.45);
+    --radius:18px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(900px 500px at 20% 0%, rgba(99,102,241,.25), transparent 60%),
+               radial-gradient(700px 500px at 80% 10%, rgba(34,197,94,.12), transparent 60%),
+               linear-gradient(180deg,#070a12,#020617);
+    color:var(--text);
+  }
+
+  .wrap{
+    max-width:1240px;
+    margin:0 auto;
+    padding:28px 18px 70px;
+  }
+
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:16px;
+    margin-bottom:16px;
+  }
+  .title{
+    display:flex; gap:12px; align-items:center;
+  }
+  .logo{
+    width:40px; height:40px; border-radius:14px;
+    background-image:url('target.jpg');
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+    border:1px solid rgba(255,255,255,.08);
+    box-shadow:0 12px 30px rgba(0,0,0,.35);
+  }
+  h1{
+    font-size:22px;
+    margin:0;
+    letter-spacing:.2px;
+  }
+  .subtitle{
+    margin-top:6px;
+    font-size:13px;
+    color:var(--muted);
+  }
+
+  .pillrow{
+    display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;
+  }
+  .pill{
+    background:rgba(2,6,23,.55);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:999px;
+    padding:7px 10px;
+    color:#c7d2fe;
+    font-size:12px;
+    backdrop-filter: blur(8px);
+  }
+  .btn{
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(2,6,23,.35);
+    color:var(--text);
+    padding:9px 12px;
+    border-radius:12px;
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .btn.primary{
+    background:linear-gradient(180deg, var(--accent2), var(--accent));
+    border-color:rgba(29,78,216,.65);
+    box-shadow:0 14px 35px rgba(29,78,216,.25);
+  }
+  .btn:active{transform:translateY(1px)}
+
+  .btn.sm{
+    padding:7px 10px;
+    border-radius:10px;
+    font-weight:700;
+    font-size:12px;
+  }
+
+  .panel{
+    background:radial-gradient(1200px 360px at top left, rgba(30,27,75,.80), transparent 65%),
+               rgba(2,6,23,.55);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+
+  .panelHead{
+    padding:16px 18px 12px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:16px;
+  }
+  .panelHead h2{
+    margin:0;
+    font-size:16px;
+    letter-spacing:.2px;
+  }
+  .panelHead .note{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:6px;
+  }
+  .controls{
+    display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;
+    align-items:center;
+  }
+  .select{
+    background:rgba(2,6,23,.45);
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:12px;
+    padding:8px 10px;
+    color:var(--text);
+    font-size:13px;
+  }
+  .toggle{
+    display:flex; gap:8px; align-items:center;
+    padding:8px 10px;
+    border-radius:12px;
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(2,6,23,.35);
+    color:var(--text);
+    font-size:13px;
+    user-select:none;
+  }
+  .toggle input{accent-color:var(--accent2)}
+  .hint{
+    padding:10px 18px 0;
+    font-size:12px;
+    color:var(--muted);
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:14px;
+  }
+  thead th{
+    text-align:left;
+    font-weight:700;
+    color:#c7d2fe;
+    padding:10px 10px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    white-space:nowrap;
+  }
+  tbody tr{
+    background:rgba(15,23,42,.55);
+    cursor:pointer;
+  }
+  tbody tr:nth-child(even){
+    background:rgba(12,19,36,.55);
+  }
+  tbody tr:hover{
+    background:rgba(17,28,54,.75);
+  }
+  td{
+    padding:12px 10px;
+    border-bottom:1px solid rgba(255,255,255,.06);
+    white-space:nowrap;
+  }
+  .ranknum{font-weight:900}
+  .barrel{font-weight:800}
+  .score{font-weight:900}
+  .muted{color:var(--muted)}
+  .conf.high{color:var(--hi)}
+  .conf.mod{color:var(--mod)}
+  .conf.low{color:var(--low)}
+  .trend.up{color:var(--hi)}
+  .trend.flat{color:var(--mod)}
+  .trend.down{color:var(--bad)}
+  .empty{opacity:.45; cursor:default}
+  .empty:hover{background:inherit}
+
+  /* subtle row glow by confidence */
+  tr.glow-high { box-shadow: inset 0 0 0 1px rgba(34,197,94,.28), 0 0 0 1px rgba(34,197,94,.10), 0 0 22px rgba(34,197,94,.08); }
+  tr.glow-mod  { box-shadow: inset 0 0 0 1px rgba(245,158,11,.26), 0 0 0 1px rgba(245,158,11,.10), 0 0 22px rgba(245,158,11,.08); }
+  tr.glow-low  { box-shadow: inset 0 0 0 1px rgba(100,116,139,.22), 0 0 0 1px rgba(100,116,139,.08), 0 0 18px rgba(100,116,139,.06); }
+
+  .spark{
+    width:78px; height:18px; display:inline-block; vertical-align:middle; opacity:.9;
+  }
+  .spark path{
+    fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+  }
+  .spark .dot{fill:currentColor}
+  .trendwrap{display:flex; align-items:center; gap:10px}
+  .trendwrap .arrow{min-width:18px; text-align:center; font-weight:900}
+
+  /* detail drawer */
+  .drawer{
+    margin-top:18px;
+    display:grid;
+    grid-template-columns: 1fr;
+    gap:16px;
+  }
+  @media (max-width: 980px){
+    .drawer{grid-template-columns:1fr}
+  }
+  .card{
+    background:radial-gradient(900px 240px at top left, rgba(30,27,75,.65), transparent 65%),
+               rgba(2,6,23,.55);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+  .cardHead{
+    padding:14px 16px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
+  }
+  .cardHead h3{
+    margin:0; font-size:15px;
+  }
+  .cardHead .small{
+    margin-top:6px; font-size:12px; color:var(--muted);
+  }
+  .cardBody{padding:14px 16px}
+  .sessionRow{
+    padding:12px 12px;
+    border:1px solid rgba(255,255,255,.08);
+    background:rgba(2,6,23,.35);
+    border-radius:14px;
+    margin-bottom:10px;
+  }
+  .sessionTitle{
+    font-weight:800;
+    letter-spacing:.15px;
+  }
+  .chips{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap}
+  .chip{
+    display:inline-flex; align-items:center;
+    padding:5px 9px;
+    border-radius:999px;
+    font-size:12px;
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(2,6,23,.45);
+    color:#c7d2fe;
+  }
+  .chip.sighters{color:#e5e7eb}
+  .fileLine{margin-top:8px; font-size:12px; color:var(--muted)}
+  .kpis{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+    margin-bottom:12px;
+  }
+  .kpi{
+    padding:10px 12px;
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,.08);
+    background:rgba(2,6,23,.35);
+  }
+  .kpi .lbl{font-size:12px; color:var(--muted)}
+  .kpi .val{font-size:18px; font-weight:900; margin-top:4px}
+  .mini{
+    font-size:12px; color:var(--muted); line-height:1.4;
+  }
+  .footerNote{
+    margin-top:14px;
+    font-size:12px;
+    color:var(--muted);
+    text-align:center;
+  }
+  .badgeDemo{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:6px 10px;
+    border-radius:999px;
+    border:1px solid rgba(245,158,11,.25);
+    background:rgba(245,158,11,.10);
+    color:#fde68a;
+    font-size:12px;
+    font-weight:700;
+  }
+
+  .btn.sm{padding:7px 10px; border-radius:11px; font-size:12px}
+  .pop{
+    position:absolute;
+    right:18px;
+    top:72px;
+    width:320px;
+    z-index:50;
+    background:radial-gradient(700px 220px at top left, rgba(30,27,75,.70), transparent 65%), rgba(2,6,23,.92);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:16px;
+    box-shadow:0 30px 80px rgba(0,0,0,.55);
+    backdrop-filter: blur(10px);
+  }
+  .popHead{padding:12px 14px; border-bottom:1px solid rgba(255,255,255,.08); font-weight:900}
+  .popBody{padding:12px 14px}
+  .popRow{display:grid; grid-template-columns: 120px 1fr; gap:10px; align-items:center; margin-bottom:10px}
+  .popLbl{font-size:12px; color:var(--muted); font-weight:700}
+  .popActions{display:flex; gap:8px; justify-content:flex-end; margin-top:8px}
+  .tileGrid{display:grid; grid-template-columns:1fr; gap:10px}
+  .tile{
+    padding:12px 12px;
+    border-radius:16px;
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(2,6,23,.35);
+    cursor:pointer;
+  }
+  .tile:hover{background:rgba(2,6,23,.45)}
+  .tile .tTitle{font-weight:900}
+  .tile .tSub{margin-top:6px; font-size:12px; color:var(--muted); line-height:1.35}
+  .tile.disabled{opacity:.55; cursor:not-allowed}
+
+  .impGrid{display:grid;grid-template-columns:1fr;gap:12px}
+  .drop{
+    border:1px dashed rgba(255,255,255,.18);
+    background:rgba(2,6,23,.28);
+    border-radius:16px;
+    padding:12px 12px;
+  }
+  .drop.drag{border-color:rgba(99,102,241,.55); background:rgba(99,102,241,.10)}
+  .dropTop{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .dropTitle{font-weight:800}
+  .dropSub{font-size:12px;color:var(--muted);margin-top:4px}
+  .fileList{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+  .fileItem{padding:10px 10px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(2,6,23,.25)}
+  .fileItem .nm{font-weight:700}
+  .fileItem .sm{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.3}
+  .pairTbl{width:100%;border-collapse:separate;border-spacing:0 8px;margin-top:10px}
+  .pairTbl td{border:0;padding:0}
+  .pairRow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .pairCard{padding:10px 10px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(2,6,23,.25)}
+  .pairCard .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+  .pairCard .nm{font-weight:800}
+  .pairCard .meta{font-size:12px;color:var(--muted);margin-top:4px}
+  .pairCard select{width:100%;margin-top:8px}
+  .impActions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:10px}
+  .warnBox{margin-top:10px;padding:10px 10px;border-radius:14px;border:1px solid rgba(245,158,11,.25);background:rgba(245,158,11,.08);color:#fde68a;font-size:12px;line-height:1.35}
+
+  body[data-mode="import"] #selWindow{display:none!important;}
+
 </style>
 </head>
-
 <body>
-<header>
-  <h1>BarrelTracker</h1>
-  <div>
-    <button onclick="addBarrel()">+ Barrel</button>
-  </div>
-</header>
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="title">
+          <div class="logo" aria-label="BarrelTracker logo"></div>
+          <div>
+            <h1>BarrelTracker</h1>
+            <div class="subtitle">Import-first build (v4.5 locked) — clean ingestion UX.</div>
+          </div>
+        </div>
+      </div>
+      <div class="pillrow">
+        <div class="pill">Vertical-first</div>
+        <div class="pill">Confidence-weighted</div>
+        <div class="pill">Sighters count toward rounds</div>
+<button id="btnClear" class="btn">Clear</button>
+      </div>
+    </header>
 
-<div class="wrap">
-  <div class="layout">
-
-    <!-- RANKING STRIP -->
     <div class="panel">
       <div class="panelHead">
-        <strong>Barrel Ranking — Current Form</strong>
-        <select id="formWindow">
-          <option value="200">200 rds</option>
-          <option value="400" selected>400 rds</option>
-          <option value="800">800 rds</option>
-        </select>
+        <div>
+          <h2>Barrel Ranking — Current Form</h2>
+          <div class="note">Last <span id="lblWindow">400</span> rounds · Min confidence: <span id="lblMinConf">Moderate</span> · <span id="lblSighters">Show sighters</span></div>
+          <div class="hint"></div>
+        </div>
+        <div class="controls">
+          <select id="selWindow" class="select">
+            <option value="200">Form window: 200 rds</option>
+            <option value="400" selected>Form window: 400 rds</option>
+            <option value="800">Form window: 800 rds</option>
+          </select>
+          <select id="selMinConf" class="select">
+            <option value="low">Min confidence: Low</option>
+            <option value="mod" selected>Min confidence: Moderate</option>
+            <option value="high">Min confidence: High</option>
+          </select>
+          <label class="toggle"><input id="chkSighters" type="checkbox" checked /> Show sighters</label>
+          <button class="btn primary" id="btnImportGlobal">Import</button>
+          <button class="btn" id="btnImportJSON">Import JSON</button>
+          <button class="btn" id="btnExport">Export</button>
+          <input id="fileImportJSON" type="file" accept=".json,application/json" style="display:none" />
+          <button class="btn" id="btnAddBarrel">+ Barrel</button>
+        
+      <!-- + Barrel popover -->
+      <div id="barrelPop" class="pop" style="display:none;">
+        <div class="popHead">Add barrel</div>
+        <div class="popBody">
+          <div class="popRow">
+            <label class="popLbl">Barrel ID</label>
+            <input id="inpBarrelId" class="select" placeholder="e.g., B6" />
+          </div>
+          <div class="popRow">
+            <label class="popLbl">Twist (optional)</label>
+            <div style="display:grid;grid-template-columns: 1fr; gap:10px;">
+              <select id="inpBarrelTwist" class="select">
+                <option value="">—</option>
+                <option value="8.5">8.5"</option>
+                <option value="9.0">9.0"</option>
+                <option value="custom">Custom…</option>
+              </select>
+              <input id="inpBarrelTwistCustom" class="input" type="number" step="0.1" min="0" placeholder='e.g., 7.5' style="display:none;" />
+            </div>
+          </div>
+          <div class="popActions">
+            <button class="btn sm" id="btnBarrelCancel">Cancel</button>
+            <button class="btn sm primary" id="btnBarrelSave">Save</button>
+          </div>
+          <div class="mini" style="margin-top:8px;">Barrels are just containers. Most sessions arrive via imports.</div>
+        </div>
       </div>
-      <div class="tableWrap">
+
+</div>
+      </div>
+
+      <div style="overflow:auto;">
         <table>
           <thead>
             <tr>
               <th>#</th>
               <th>Barrel</th>
-              <th>Score</th>
+              <th>Rank</th>
               <th>Conf</th>
-              <th>Vert</th>
-              <th>MR</th>
-              <th>SD</th>
+              <th>Vert (MOA)</th>
+              <th>MR (MOA)</th>
+              <th>SD (fps)</th>
               <th>Life</th>
               <th>Trend</th>
               <th>Last</th>
@@ -163,108 +463,1631 @@ td{
       </div>
     </div>
 
-    <!-- DRAWER -->
-    <div class="panel">
-      <div class="panelHead">
-        <strong id="drawerTitle">Select a barrel</strong>
-        <div>
-          <button id="importBtn" class="primary" onclick="showImport()" disabled>Import</button>
-          <button onclick="showManual()" disabled id="manualBtn">+ Manual</button>
+    <div class="drawer">
+      <div class="card" id="detailCard">
+        <div class="cardHead">
+          <div>
+            <h3 id="detailTitle">Select a barrel row</h3>
+            <div class="small" id="detailSub">Click a row in the ranking strip to preview its timeline list.</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+            <div class="small" id="detailMeta"></div>
+            <div id="detailActions" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;"></div>
+          </div>
+        </div>
+        <div class="cardBody" id="detailBody">
+          <div class="mini">
+            This panel will become the full barrel timeline view (session list + trend chart + notes). For now it shows the session list format we agreed on.
+          </div>
         </div>
       </div>
-      <div class="drawer" id="drawerBody">
-        <div class="small">No barrel selected.</div>
-      </div>
+
+      
+
     </div>
 
+    <div class="footerNote">BarrelTracker — Import-First v4.5 (locked). Local-only. No sample data.</div>
   </div>
-</div>
 
 <script>
-let barrels=[];
-let sessions=[];
-let selected=null;
+(() => {
+  const state = {
+    barrels: [{ id:"B1", display:"B1" }],
+    sessions: [],
+    selectedBarrelId: "B1",
 
-function addBarrel(){
-  const id='B'+(barrels.length+1);
-  barrels.push({id});
-  selected=id;
-  render();
-}
+    // ranking controls
+    windowRounds: 400,
+    minConf: "mod",
+    showSighters: true,
 
-function showImport(){
-  const d=document.getElementById('drawerBody');
-  d.innerHTML=`
-    <div class="small">Import ShotMarker + Chrono (logic wired next)</div>
-    <p class="small">This is the import-first anchor. No sample data.</p>
-  `;
-}
+    // detail drawer mode
+    detailMode: "timeline", // "timeline" | "import" | "manual"
+    draft: null,
+importer: null
+  };
 
-function showManual(){
-  const d=document.getElementById('drawerBody');
-  d.innerHTML=`
-    <div class="small">Manual session (fallback)</div>
-    <button onclick="addFakeSession()">Add test session</button>
-  `;
-}
+  const CONF_ORDER = { low: 1, mod: 2, high: 3 };
+  const CONF_LABEL = { low: "Low", mod: "Moderate", high: "High" };
 
-function addFakeSession(){
-  sessions.push({
-    barrel:selected,
-    vert:(0.55+Math.random()*0.3),
-    mr:(0.2+Math.random()*0.15),
-    sd:(6+Math.random()*3),
-    conf:'high',
-    date:new Date().toISOString().slice(0,10)
-  });
-  render();
-}
+  const $ = (id) => document.getElementById(id);
 
-function render(){
-  const body=document.getElementById('rankBody');
-  body.innerHTML='';
-  barrels.forEach((b,i)=>{
-    const s=sessions.filter(x=>x.barrel===b.id);
-    const avg=k=>s.length?(s.reduce((a,x)=>a+x[k],0)/s.length):null;
-    const tr=document.createElement('tr');
-    tr.className=s.length?'glow-high':'';
-    tr.innerHTML=`
-      <td>${i+1}</td>
-      <td>${b.id}</td>
-      <td>${s.length?(100-(avg('vert')*60)).toFixed(1):'—'}</td>
-      <td>${s.length?'High':'—'}</td>
-      <td>${s.length?avg('vert').toFixed(2):'—'}</td>
-      <td>${s.length?avg('mr').toFixed(2):'—'}</td>
-      <td>${s.length?avg('sd').toFixed(1):'—'}</td>
-      <td>${s.length*22}</td>
-      <td>${s.length?'▲':''}</td>
-      <td>${s.length?s[s.length-1].date:'—'}</td>
-    `;
-    tr.onclick=()=>{
-      selected=b.id;
-      document.getElementById('drawerTitle').textContent=b.id+' — Timeline';
-      document.getElementById('importBtn').disabled=false;
-      document.getElementById('manualBtn').disabled=false;
-      showTimeline();
+  function fmtDateShort(iso){
+    const d = new Date(iso + "T00:00:00");
+    return d.toLocaleDateString(undefined, { month:"short", day:"2-digit" });
+  }
+
+  function escapeHTML(str){
+    return String(str ?? "").replace(/[&<>"']/g, (ch) => (
+      ch === "&" ? "&amp;" :
+      ch === "<" ? "&lt;" :
+      ch === ">" ? "&gt;" :
+      ch === '"' ? "&quot;" : "&#39;"
+    ));
+  }
+
+
+  function slugify(s){
+    return String(s ?? "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g,"_")
+      .replace(/^_+|_+$/g,"")
+      .slice(0,60) || "file";
+  }
+
+
+  function downloadText(filename, text, mime){
+    const blob = new Blob([text], { type: mime || "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 250);
+  }
+
+  function buildExportPayload(){
+    const now = new Date();
+    return {
+      app: "BarrelTracker",
+      export_version: "v1",
+      created_at: now.toISOString(),
+      state: {
+        barrels: state.barrels || [],
+        sessions: state.sessions || [],
+        settings: {
+          windowRounds: state.windowRounds,
+          minConfidence: state.minConfidence,
+          showSighters: state.showSighters
+        }
+      }
     };
-    body.appendChild(tr);
-  });
+  }
+
+  function wireDropZone(el, onFiles){
+    if (!el) return;
+    const setDrag = (v) => el.classList.toggle("drag", !!v);
+    el.addEventListener("dragover", (e) => { e.preventDefault(); setDrag(true); });
+    el.addEventListener("dragleave", () => setDrag(false));
+    el.addEventListener("drop", async (e) => {
+      e.preventDefault(); setDrag(false);
+      const files = [...(e.dataTransfer?.files || [])].filter(f => f && f.size);
+      if (files.length) await onFiles(files);
+    });
+  }
+
+  
+  function extractDistanceYdFromShotMarker(text){
+    const raw = String(text||"").replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n");
+    const scanMax = Math.min(raw.length, 120);
+    // Look for explicit distance lines/fields in metadata/header area
+    // Examples we try to catch: "Distance,1000", "distance: 1000 yd", "Range 1000y"
+    const rx = /(?:distance|range|yard|yards|yd)\s*[:=,\t ]\s*(\d{2,4})\s*(?:yd|yards|y)?/i;
+    for (let i=0;i<scanMax;i++){
+      const line = String(raw[i]||"").trim();
+      if (!line) continue;
+      const m = line.match(rx);
+      if (m){
+        const yd = parseInt(m[1],10);
+        if (yd >= 25 && yd <= 2000) return yd;
+      }
+      // Sometimes it's "1000 yd" without a label but near the top
+      const m2 = line.match(/\b(\d{3,4})\s*(?:yd|yards|y)\b/i);
+      if (m2){
+        const yd = parseInt(m2[1],10);
+        if (yd >= 25 && yd <= 2000) return yd;
+      }
+    }
+    return null;
+  }
+
+function parseCSV(text){
+    // Robust-ish CSV parser for SM/Garmin-style exports:
+    // - Skips metadata lines above the real header
+    // - Handles repeated header lines (skips them)
+    // - Handles a leading empty column (common when lines start with a comma)
+    const rawLines = String(text || "").replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n");
+    const lines = rawLines.filter(l => l != null && l.trim().length);
+
+    const splitLine = (line) => {
+      const out = [];
+      let cur = "", inQ = false;
+      for (let i=0;i<line.length;i++){
+        const c = line[i];
+        if (c === '"'){
+          if (inQ && line[i+1] === '"'){ cur += '"'; i++; continue; }
+          inQ = !inQ; continue;
+        }
+        if (c === "," && !inQ){ out.push(cur); cur = ""; continue; }
+        cur += c;
+      }
+      out.push(cur);
+      return out.map(s => String(s ?? "").trim());
+    };
+
+    const headerScore = (cols) => {
+      const nks = cols.map(normKey);
+      const letterish = cols.filter(c => /[A-Za-z]/.test(String(c||""))).length;
+      if (cols.length < 4 || letterish < Math.max(2, Math.floor(cols.length*0.3))) return 0;
+
+      let s = 0;
+      if (nks.includes("time")) s += 1;
+      if (nks.some(k => ["x","xmm","horiz","horizontal","dx"].includes(k) || k.startsWith("xmm") || k.includes("xmm"))) s += 1;
+      if (nks.some(k => ["y","ymm","vert","vertical","dy"].includes(k) || k.startsWith("ymm") || k.includes("ymm"))) s += 1;
+      if (nks.some(k => ["v","vfps","vel","velocity","fps","muzzlevelocity"].includes(k) || k.includes("fps") || k.includes("velocity"))) s += 1;
+      return s;
+    };
+
+    // Find best header within the first ~80 non-empty lines
+    let headerIdx = 0;
+    let best = 0;
+    const scanMax = Math.min(lines.length, 80);
+    for (let i=0;i<scanMax;i++){
+      const cols = splitLine(lines[i]);
+      const sc = headerScore(cols);
+      if (sc > best){
+        best = sc;
+        headerIdx = i;
+      }
+      // early stop if we found a strong header
+      if (best >= 3) break;
+    }
+
+    const rawHeaders = splitLine(lines[headerIdx]).map(h => h.replace(/^\uFEFF/,""));
+    // If the export starts each line with a comma, the first header will be "" — drop it.
+    const dropFirst = rawHeaders.length && rawHeaders[0] === "";
+    const headers = dropFirst ? rawHeaders.slice(1) : rawHeaders;
+
+    const rows = [];
+    for (let i=headerIdx+1;i<lines.length;i++){
+      const cols0 = splitLine(lines[i]);
+      // Skip repeated headers / section headers
+      if (headerScore(cols0) >= best && i > headerIdx) continue;
+
+      const cols = dropFirst ? cols0.slice(1) : cols0;
+      if (!cols.length) continue;
+
+      const obj = {};
+      for (let j=0;j<headers.length;j++){
+        obj[headers[j]] = (cols[j] ?? "");
+      }
+      rows.push(obj);
+    }
+    return { headers, rows };
+  }
+
+  // ShotMarker "shotslog" exports can contain multiple target blocks (sessions/strings).
+  // We split them into per-target groups so they can pair 1:1 with chrono files.
+  function parseShotMarkerMulti(text, filename){
+    const raw = String(text || "").replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n");
+
+    const isSessionLine = (line) => /^[A-Z][a-z]{2}\s+\d{1,2}\s+\d{4},/.test(String(line||"").trim());
+
+    // Reuse the same CSV splitting logic as parseCSV
+    const splitLine = (line) => {
+      const out = [];
+      let cur = "", inQ = false;
+      for (let i=0;i<line.length;i++){
+        const c = line[i];
+        if (c === '"'){
+          if (inQ && line[i+1] === '"'){ cur += '"'; i++; continue; }
+          inQ = !inQ; continue;
+        }
+        if (c === "," && !inQ){ out.push(cur); cur = ""; continue; }
+        cur += c;
+      }
+      out.push(cur);
+      return out.map(s => String(s ?? "").trim());
+    };
+
+    const headerScore = (cols) => {
+      const nks = cols.map(normKey);
+      const letterish = cols.filter(c => /[A-Za-z]/.test(String(c||""))).length;
+      if (cols.length < 4 || letterish < Math.max(2, Math.floor(cols.length*0.3))) return 0;
+      let s = 0;
+      if (nks.includes("time")) s += 1;
+      if (nks.some(k => ["x","xmm","horiz","horizontal","dx"].includes(k) || k.startsWith("xmm") || k.includes("xmm"))) s += 1;
+      if (nks.some(k => ["y","ymm","vert","vertical","dy"].includes(k) || k.startsWith("ymm") || k.includes("ymm"))) s += 1;
+      if (nks.some(k => ["v","vfps","vel","velocity","fps","muzzlevelocity"].includes(k) || k.includes("fps") || k.includes("velocity"))) s += 1;
+      return s;
+    };
+
+    const blocks = [];
+    let cur = null;
+
+    for (let i=0;i<raw.length;i++){
+      const line = raw[i];
+      if (!line || !line.trim()) continue;
+
+      if (isSessionLine(line)){
+        if (cur) blocks.push(cur);
+        cur = { sessionLine: line.trim(), headerLine: null, headers: null, rows: [] };
+        continue;
+      }
+
+      if (!cur) continue;
+
+      // Find header inside a session
+      if (!cur.headerLine){
+        const cols0 = splitLine(line);
+        if (headerScore(cols0) >= 3){
+          cur.headerLine = line;
+          const rawHeaders = cols0.map(h => String(h||"").replace(/^\uFEFF/,""));
+          const dropFirst = rawHeaders.length && rawHeaders[0] === "";
+          cur.headers = (dropFirst ? rawHeaders.slice(1) : rawHeaders).map(h => h.trim()).filter(h => h.length);
+        }
+        continue;
+      }
+
+      // Data rows: often start with a leading comma (empty first col)
+      if (line.trim().startsWith(",")){
+        const cols0 = splitLine(line);
+        const dropFirst = cols0.length && cols0[0] === "";
+        const cols = dropFirst ? cols0.slice(1) : cols0;
+
+        if (!cols.length) continue;
+
+        // Map row
+        const obj = {};
+        for (let j=0;j<cur.headers.length;j++){
+          obj[cur.headers[j]] = (cols[j] ?? "");
+        }
+
+        // Skip blank rows
+        const xKey = findCol(cur.headers, ["x mm","xmm","x"]);
+        const yKey = findCol(cur.headers, ["y mm","ymm","y"]);
+        const idKey = findCol(cur.headers, ["id"]);
+        const hasXY = (toNum(obj[xKey]) != null) || (toNum(obj[yKey]) != null);
+        const hasId = String(obj[idKey] ?? "").trim().length > 0;
+        if (!hasXY && !hasId) continue;
+
+        // Skip repeated header rows
+        if (headerScore(cols0) >= 3) continue;
+
+        cur.rows.push(obj);
+      }
+    }
+    if (cur) blocks.push(cur);
+
+    // Fallback: if we didn't detect blocks, treat as single CSV.
+    if (!blocks.length){
+      const parsed = parseCSV(text);
+      return [{
+        sourceFile: filename,
+        label: filename?.replace(/\.[^.]+$/,"") || "ShotMarker",
+        headers: parsed.headers || [],
+        rows: parsed.rows || [],
+      }];
+    }
+
+    return blocks
+      .filter(b => (b.rows || []).length)
+      .map((b, idx) => {
+        const nice = filename?.replace(/\.[^.]+$/,"") || "ShotMarker";
+        const base = b.sessionLine || nice;
+        const label = `${base} — ${nice}`;
+        return {
+          sourceFile: filename,
+          label,
+          headers: b.headers || [],
+          rows: b.rows || []
+        };
+      });
+  }
+
+
+  function normKey(k){
+    return String(k || "").toLowerCase().replace(/[^a-z0-9]+/g,"").trim();
+  }
+
+  function findCol(headers, candidates){
+    const map = new Map(headers.map(h => [normKey(h), h]));
+    for (const c of candidates){
+      const nk = normKey(c);
+      if (map.has(nk)) return map.get(nk);
+    }
+    // fuzzy contains
+    for (const h of headers){
+      const nk = normKey(h);
+      if (candidates.some(c => nk.includes(normKey(c)))) return h;
+    }
+    return null;
+  }
+
+  function toNum(v){
+    const x = parseFloat(String(v ?? "").replace(/[^0-9\.\-]+/g,""));
+    return Number.isFinite(x) ? x : null;
+  }
+
+  function inchesToMOA(inches, yd){
+    const d = Math.max(1, yd || 1000);
+    return inches * 100 / (1.047 * d);
+  }
+
+  function mean(arr){
+    if (!arr.length) return 0;
+    return arr.reduce((a,b)=>a+b,0) / arr.length;
+  }
+
+  function sampleSD(arr){
+    if (arr.length < 2) return 0;
+    const m = mean(arr);
+    const v = arr.reduce((a,x)=>a + (x-m)*(x-m), 0) / (arr.length - 1);
+    return Math.sqrt(v);
+  }
+
+  function parseDateFromFilename(name){
+    const s = String(name || "");
+    // 2025-10-11
+    let m = s.match(/(20\d{2})[-_](\d{2})[-_](\d{2})/);
+    if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+    // 20251011
+    m = s.match(/(20\d{2})(\d{2})(\d{2})/);
+    if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+    return null;
+  }
+
+  function suggestConfidence(shotsTotal, hasChrono){
+    const n = shotsTotal || 0;
+    if (hasChrono && n >= 20) return "high";
+    if (n >= 15) return "mod";
+    return "low";
+  }
+
+  function recomputeTargetMetrics(t, distanceYd){
+    // expects t.shots: [{xIn,yIn}]
+    const shots = t.shots || [];
+    if (!shots.length) return { ...t, mr:0, vert:0, distanceYd };
+    const ys = shots.map(s => s.yIn);
+    const rs = shots.map(s => Math.sqrt((s.xIn||0)**2 + (s.yIn||0)**2));
+    const mrIn = mean(rs);
+    const vertIn = (Math.max(...ys) - Math.min(...ys));
+    return {
+      ...t,
+      distanceYd,
+      mr: inchesToMOA(mrIn, distanceYd),
+      vert: inchesToMOA(vertIn, distanceYd)
+    };
+  }
+
+  async function handleShotMarkerFiles(files, imp){
+    imp.errors = imp.errors || [];
+    imp.status = "";
+    const csvFiles = files.filter(f => /\.csv$/i.test(f.name));
+    if (!csvFiles.length){
+      imp.errors.push("ShotMarker: please use CSV exports for now.");
+      return;
+    }
+    for (const f of csvFiles){
+      try{
+        const text = await f.text();
+        // Distance: prefer ShotMarker-provided metadata when available
+        const dFound = extractDistanceYdFromShotMarker(text);
+        if (dFound != null){
+          imp.distanceYd = dFound;
+          imp.distanceSource = "shotmarker";
+        } else if (imp.distanceYd == null){
+          // fallback inference (default 1000 yd) — user should verify
+          imp.distanceYd = 1000;
+          imp.distanceSource = "inferred";
+        }
+
+        const groups = parseShotMarkerMulti(text, f.name);
+        for (let gi=0; gi<groups.length; gi++){
+          const g = groups[gi];
+          const parsed = { headers: g.headers || [], rows: g.rows || [] };
+          const headers = parsed.headers || [];
+          // try to find horizontal/vertical columns (ShotMarker uses x mm / y mm)
+          const xCol = findCol(headers, ["x", "x mm", "xmm", "horiz", "horizontal", "dx", "x(in)", "x_in", "xinch", "x_inches"]);
+          const yCol = findCol(headers, ["y", "y mm", "ymm", "vert", "vertical", "dy", "y(in)", "y_in", "yinch", "y_inches"]);
+          if (!xCol || !yCol){
+            imp.errors.push(`ShotMarker "${f.name}": couldn't find X/Y columns in block ${gi+1}. (Expected headers like x mm / y mm.)`);
+            continue;
+          }
+
+          // unit detection (very light): if header contains mm, assume mm
+          const hdrJoined = headers.join(" ").toLowerCase();
+          const assumeMM = hdrJoined.includes("mm");
+          const shots = [];
+          for (const row of parsed.rows){
+            const x = toNum(row[xCol]);
+            const y = toNum(row[yCol]);
+            if (x == null || y == null) continue;
+            shots.push({ x, y });
+          }
+          if (shots.length < 3){
+            imp.errors.push(`ShotMarker "${f.name}": block ${gi+1} had too few shots after parsing.`);
+            continue;
+          }
+
+          // Compute metrics in MOA (Vert = vertical extreme spread, MR = mean radius)
+          // We treat X/Y as mm unless we think they're inches; convert mm->in.
+          const toIn = (v) => assumeMM ? (v / 25.4) : v;
+          const xs = shots.map(s => toIn(s.x));
+          const ys = shots.map(s => toIn(s.y));
+
+          // center
+          const mx = xs.reduce((a,b)=>a+b,0)/xs.length;
+          const my = ys.reduce((a,b)=>a+b,0)/ys.length;
+
+          const radiiIn = xs.map((x,i)=> Math.hypot(x-mx, ys[i]-my));
+          const mrIn = radiiIn.reduce((a,b)=>a+b,0)/radiiIn.length;
+
+          const yMin = Math.min(...ys);
+          const yMax = Math.max(...ys);
+          const vertIn = (yMax - yMin);
+
+          // Need distance to convert inches->MOA. In spec build we assume 1000y unless user provides later.
+          const distYd = imp.distanceYd || 1000;
+          const moaPerIn = 100 / (1.047 * distYd); // inches at distance to MOA
+          const vertMOA = vertIn * moaPerIn;
+          const mrMOA = mrIn * moaPerIn;
+
+          const t = {
+            id: `SM_${slugify(f.name)}_${gi+1}`,
+            fileName: (groups.length>1 ? `${f.name} (T${gi+1})` : f.name),
+            sourceFile: f.name,
+            label: g.label || f.name,
+            shotsTotal: shots.length,
+            shotsUsed: shots.length,
+            vert: vertMOA,
+            mr: mrMOA,
+            confidence: suggestConfidence(vertMOA, mrMOA, null, shots.length)
+          };
+
+          // Try date extraction from label (first token like "Sep 25 2025")
+          const mDate = String(g.label||"").match(/([A-Z][a-z]{2})\s+(\d{1,2})\s+(\d{4})/);
+          if (mDate){
+            const mon = mDate[1], day = String(mDate[2]).padStart(2,"0"), yr = mDate[3];
+            const months = {Jan:"01",Feb:"02",Mar:"03",Apr:"04",May:"05",Jun:"06",Jul:"07",Aug:"08",Sep:"09",Oct:"10",Nov:"11",Dec:"12"};
+            const mm = months[mon] || "01";
+            t.date = `${yr}-${mm}-${day}`;
+          }
+
+          // nicer label fallback
+          if (!t.label){
+            const nice = f.name.replace(/\.[^.]+$/,"");
+            t.label = nice + (groups.length>1 ? ` — Target ${gi+1}` : "");
+          }
+          imp.smTargets.push(t);
+        }
+      }catch(err){
+        imp.errors.push(`ShotMarker "${f.name}": parse failed (${String(err?.message || err)}).`);
+      }
+    }
+
+    // auto-pair by order if counts match (or if pairings empty)
+    autoPair(imp);
+    imp.status = imp.smTargets.length ? "ShotMarker targets parsed." : imp.status;
+  }
+
+  async function handleChronoFiles(files, imp){
+    imp.errors = imp.errors || [];
+    imp.status = "";
+    const csvFiles = files.filter(f => /\.csv$/i.test(f.name));
+    if (!csvFiles.length){
+      imp.errors.push("Chrono: please use CSV exports for now (XLS/XLSX support comes next).");
+      return;
+    }
+
+    for (const f of csvFiles){
+      try{
+        const text = await f.text();
+        const parsed = parseCSV(text);
+        const headers = parsed.headers || [];
+        // attempt to find velocity column (robust):
+        // 1) prefer known header names
+        // 2) otherwise score numeric columns by "fps plausibility"
+        const cand = ["v fps","vfps","vel","velocity","fps","muzzlevelocity","muzzle velocity","speed"];
+        let vals = [];
+        let usedCol = null;
+
+        const scoreVals = (arr) => {
+          const a = arr.filter(x => x != null && isFinite(x));
+          if (a.length < 8) return -1;
+          const inRange = a.filter(x => x > 1000 && x < 5000);
+          if (inRange.length < Math.max(8, a.length*0.6)) return -1;
+
+          const mean = inRange.reduce((p,c)=>p+c,0)/inRange.length;
+          const sd = Math.sqrt(inRange.reduce((p,c)=>p+Math.pow(c-mean,2),0)/inRange.length);
+
+          // Prefer realistic rifle mean/sd ranges (still flexible)
+          let s = 0;
+          if (mean > 1500 && mean < 3500) s += 2;
+          if (sd >= 1 && sd < 80) s += 2;
+          if (sd < 200) s += 1;
+          s += Math.min(2, inRange.length/20);
+          return s;
+        };
+
+        // pass 1: explicit header candidates
+        for (const c of cand){
+          const h = findCol(headers, [c]);
+          if (!h) continue;
+          const tmp = parsed.rows.map(r => toNum(r[h])).filter(x => x != null);
+          const sc = scoreVals(tmp);
+          if (sc >= 0){
+            vals = tmp.filter(x => x > 1000 && x < 5000);
+            usedCol = h;
+            break;
+          }
+        }
+
+        // pass 2: search all headers for best plausible fps column
+        if (!vals.length){
+          let bestSc = -1;
+          let best = null;
+          for (const h of headers){
+            const tmp = parsed.rows.map(r => toNum(r[h])).filter(x => x != null);
+            const sc = scoreVals(tmp);
+            if (sc > bestSc){
+              bestSc = sc;
+              best = { h, tmp };
+            }
+          }
+          if (best && bestSc >= 0){
+            vals = best.tmp.filter(x => x > 1000 && x < 5000);
+            usedCol = best.h;
+          }
+        }
+
+        if (vals.length < 3){
+          imp.errors.push(`Chrono "${f.name}": couldn't find a velocity column with enough values.`);
+          continue;
+        }
+
+        const date = parseDateFromFilename(f.name) || null;
+        const cid = `C_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        imp.chronoSets.push({
+          id: cid,
+          fileName: f.name,
+          date,
+          shotsTotal: vals.length,
+          sd: sampleSD(vals),
+          avg: mean(vals)
+        });
+      }catch(err){
+        imp.errors.push(`Chrono "${f.name}": parse failed (${String(err?.message || err)}).`);
+      }
+    }
+
+    autoPair(imp);
+    imp.status = imp.chronoSets.length ? "Chrono files parsed." : imp.status;
+  }
+
+  function autoPair(imp){
+    if (!imp || !imp.smTargets) return;
+    imp.pairings = imp.pairings || {};
+    // if equal counts and no pairings yet, pair by index
+    if (imp.smTargets.length && imp.chronoSets.length){
+      const need = imp.smTargets.filter(t => !imp.pairings[t.id]).length;
+      if (need){
+        const min = Math.min(imp.smTargets.length, imp.chronoSets.length);
+        for (let i=0;i<min;i++){
+          const t = imp.smTargets[i];
+          const c = imp.chronoSets[i];
+          if (!imp.pairings[t.id]) imp.pairings[t.id] = c.id;
+        }
+      }
+    }
+  }
+
+  function renderImportListsAndPairings(imp){
+    // lists
+    const smList = $("smList");
+    const chList = $("chList");
+    if (smList){
+      smList.innerHTML = imp.smTargets.length ? imp.smTargets.map(t => `
+        <div class="fileItem">
+          <div class="nm">${escapeHTML(t.fileName)}</div>
+          <div class="sm">${t.shotsTotal} shots · Vert <b>${(t.vert||0).toFixed(2)}</b> MOA · MR <b>${(t.mr||0).toFixed(2)}</b> MOA</div>
+        </div>
+      `).join("") : `<div class="mini" style="color:var(--muted);">No targets loaded yet.</div>`;
+    }
+    if (chList){
+      chList.innerHTML = imp.chronoSets.length ? imp.chronoSets.map(c => `
+        <div class="fileItem">
+          <div class="nm">${escapeHTML(c.fileName)}</div>
+          <div class="sm">${c.shotsTotal} vels · SD <b>${(c.sd||0).toFixed(1)}</b> fps · Avg ${(c.avg||0).toFixed(0)} fps</div>
+        </div>
+      `).join("") : `<div class="mini" style="color:var(--muted);">No chrono files loaded yet.</div>`;
+    }
+
+    // pairings UI
+    const wrap = $("pairWrap");
+    if (!wrap) return;
+
+    if (!imp.smTargets.length){
+      wrap.innerHTML = `<div class="mini" style="margin-top:10px;color:var(--muted);">Load ShotMarker targets to begin pairing.</div>`;
+      return;
+    }
+
+    const chronoOpts = imp.chronoSets.map(c => `<option value="${c.id}">${escapeHTML(c.fileName)} (${c.shotsTotal} vels, SD ${(c.sd||0).toFixed(1)})</option>`).join("");
+
+    wrap.innerHTML = imp.smTargets.map((t, idx) => {
+      const sel = imp.pairings[t.id] || "";
+      const paired = imp.chronoSets.find(c => c.id === sel);
+      const hasChrono = !!paired;
+      const conf = suggestConfidence(t.shotsTotal, hasChrono);
+      return `
+        <div class="pairRow" data-tid="${t.id}">
+          <div class="pairCard">
+            <div class="top">
+              <div>
+                <div class="nm">Target ${idx+1}</div>
+                <div class="meta">${escapeHTML(t.fileName)}<br/>${t.shotsTotal} shots · Vert ${(t.vert||0).toFixed(2)} · MR ${(t.mr||0).toFixed(2)}</div>
+              </div>
+              <div class="chip conf ${conf}">${CONF_LABEL[conf]}</div>
+            </div>
+          </div>
+          <div class="pairCard">
+            <div class="nm">Chrono</div>
+            <div class="meta">${paired ? `${escapeHTML(paired.fileName)}<br/>${paired.shotsTotal} vels · SD ${(paired.sd||0).toFixed(1)}` : `No chrono paired (allowed, but lowers confidence)`}</div>
+            <select class="select impPairSel" data-tid="${t.id}">
+              <option value="">— None —</option>
+              ${chronoOpts}
+            </select>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    [...wrap.querySelectorAll(".impPairSel")].forEach(sel => {
+      const tid = sel.getAttribute("data-tid");
+      sel.value = imp.pairings[tid] || "";
+      sel.addEventListener("change", () => {
+        imp.pairings[tid] = sel.value || "";
+        render();
+      });
+    });
+  }
+
+  function generateSessionsFromImport(imp){
+    const barrelId = imp.barrelId || state.selectedBarrelId || "B1";
+    imp.barrelId = barrelId;
+
+    let barrel = state.barrels.find(b => b.id === barrelId);
+    if (!barrel){
+      barrel = { id: barrelId, display: barrelId };
+      state.barrels.push(barrel);
+      state.selectedBarrelId = barrelId;
+    }
+
+    const created = [];
+    for (let i=0;i<imp.smTargets.length;i++){
+      const t = imp.smTargets[i];
+      const chronoId = imp.pairings[t.id] || "";
+      const chrono = chronoId ? imp.chronoSets.find(c => c.id === chronoId) : null;
+
+      const conf = suggestConfidence(t.shotsTotal, !!chrono);
+      const date = t.date || chrono?.date || new Date().toISOString().slice(0,10);
+      const label = `${new Date(date+"T00:00:00").toLocaleDateString(undefined,{month:"short",day:"2-digit",year:"numeric"})} — ${(t.fileName || t.sourceFile || "ShotMarker").replace(/\.[^.]+$/,"")}`;
+
+      created.push({
+        id: `S_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+        barrelId,
+        date,
+        label,
+        isSighters: false,
+        shotsUsed: Math.min(20, t.shotsTotal || 0) || (t.shotsTotal || 0),
+        shotsTotal: t.shotsTotal || 0,
+        mr: t.mr || 0,
+        vert: t.vert || 0,
+        sd: chrono ? (chrono.sd || 0) : 0,
+        confidence: conf,
+        sourceFile: `${t.fileName}${chrono ? " + " + chrono.fileName : ""}`,
+        sourceType: "shotmarker",
+        notes: ""
+      });
+    }
+
+    // push and re-render
+    state.sessions.push(...created);
+  }
+
+  function clearAll(){
+    state.barrels = [{ id:"B1", display:"B1" }];
+    state.sessions = [];
+    state.selectedBarrelId = "B1";
+    state.detailMode = "timeline";
+    state.draft = null;
+    state.importer = null;
+    render();
+  }
+
+
+function defaultDraft(barrelId){
+  const today = new Date();
+  const iso = today.toISOString().slice(0,10);
+  return {
+    barrelId: barrelId || state.selectedBarrelId || (state.barrels[0]?.id || ""),
+    date: iso,
+    label: "",
+    isSighters: false,
+    shotsUsed: 20,
+    shotsTotal: 22,
+    vert: 0.00,
+    mr: 0.00,
+    sd: 0.0,
+    confidence: "mod",
+    sourceFile: "",
+    notes: ""
+  };
 }
 
-function showTimeline(){
-  const d=document.getElementById('drawerBody');
-  const s=sessions.filter(x=>x.barrel===selected);
-  d.innerHTML=s.length?s.map(x=>`
-    <div class="session">
-      <span class="chip">Vert ${x.vert.toFixed(2)}</span>
-      <span class="chip">MR ${x.mr.toFixed(2)}</span>
-      <span class="chip">SD ${x.sd.toFixed(1)}</span>
-      <span class="chip">High</span>
+function openAddSession(barrelId){
+  state.detailMode = "manual";
+  state.draft = defaultDraft(barrelId);
+  render();
+}
+
+function openImport(barrelId){
+  state.detailMode = "import";
+  state.draft = null;
+  render();
+}
+
+function closeAddSession(){
+  state.detailMode = "timeline";
+  state.draft = null;
+  renderDetail();
+}
+
+function ensureBarrel(id){
+  const bid = String(id || "").trim();
+  if (!bid) return null;
+  const existing = state.barrels.find(b => b.id === bid);
+  if (existing) return existing;
+  const b = { id: bid, display: bid };
+  state.barrels.push(b);
+  return b;
+}
+
+  function sessionsForBarrel(barrelId){
+    return state.sessions
+      .filter(s => s.barrelId === barrelId)
+      .filter(s => state.showSighters ? true : !s.isSighters)
+      .sort((a,b) => (a.date < b.date ? 1 : -1));
+  }
+
+  function lifeRounds(barrelId){
+    return sessionsForBarrel(barrelId).reduce((acc,s)=>acc + (s.shotsTotal || 0), 0);
+  }
+
+  function formWindowSessions(barrelId){
+    const list = sessionsForBarrel(barrelId).slice();
+    let rounds = 0;
+    const picked = [];
+    for (const s of list){
+      if (!s.shotsTotal) continue;
+      if (rounds >= state.windowRounds) break;
+      picked.push(s);
+      rounds += s.shotsTotal;
+    }
+    return picked;
+  }
+
+  function aggregate(barrelId){
+    const win = formWindowSessions(barrelId);
+    if (!win.length) return null;
+
+    const avg = (k) => win.reduce((a,s)=>a + (s[k] ?? 0), 0) / win.length;
+    const vert = avg("vert");
+    const mr = avg("mr");
+    const sd = avg("sd");
+
+    const confScore = Math.max(...win.map(s => CONF_ORDER[s.confidence] || 1));
+    const conf = Object.keys(CONF_ORDER).find(k => CONF_ORDER[k] === confScore) || "low";
+
+    let score = 100 - (vert * 60) - (mr * 20) - (sd * 1.2);
+    const w = conf === "high" ? 1.0 : (conf === "mod" ? 0.90 : 0.78);
+    score *= w;
+    score = Math.max(0, Math.min(100, score));
+
+    const trend = (() => {
+      const t = win.slice(0,3).reverse();
+      if (t.length < 2) return "flat";
+      const delta = (t[t.length-1].vert ?? 0) - (t[0].vert ?? 0);
+      if (delta <= -0.03) return "up";
+      if (delta >=  0.03) return "down";
+      return "flat";
+    })();
+
+    const last = win[0]?.date || null;
+    return { vert, mr, sd, conf, score, trend, last };
+  }
+
+  function passesMinConf(conf){
+    return (CONF_ORDER[conf] || 1) >= (CONF_ORDER[state.minConf] || 2);
+  }
+
+  function trendSparkSVG(dir){
+    if (dir === "up"){
+      return `<svg class="spark" viewBox="0 0 80 18" aria-hidden="true">
+                <path d="M2 14 L16 13 L30 11 L44 9 L58 6 L72 4"></path>
+                <circle class="dot" cx="72" cy="4" r="2.5"></circle>
+              </svg>`;
+    }
+    if (dir === "down"){
+      return `<svg class="spark" viewBox="0 0 80 18" aria-hidden="true">
+                <path d="M2 4 L16 6 L30 8 L44 10 L58 12 L72 14"></path>
+                <circle class="dot" cx="72" cy="14" r="2.5"></circle>
+              </svg>`;
+    }
+    return `<svg class="spark" viewBox="0 0 80 18" aria-hidden="true">
+              <path d="M2 10 L16 10 L30 10 L44 10 L58 10 L72 10"></path>
+              <circle class="dot" cx="72" cy="10" r="2.5"></circle>
+            </svg>`;
+  }
+
+  function rowGlowClass(conf){
+    if (conf === "high") return "glow-high";
+    if (conf === "mod") return "glow-mod";
+    if (conf === "low") return "glow-low";
+    return "";
+  }
+
+  function renderRanking(){
+    const body = $("rankBody");
+    body.innerHTML = "";
+
+    const rows = state.barrels.map(b => {
+      const agg = aggregate(b.id);
+      const life = lifeRounds(b.id);
+      return { barrel:b, agg, life };
+    });
+
+    const filtered = rows.filter(r => !r.agg ? true : passesMinConf(r.agg.conf));
+
+    filtered.sort((a,b) => {
+      if (!a.agg && !b.agg) return a.barrel.id.localeCompare(b.barrel.id);
+      if (!a.agg) return 1;
+      if (!b.agg) return -1;
+      return (b.agg.score - a.agg.score);
+    });
+
+    let rank = 0;
+    for (const r of filtered){
+      const agg = r.agg;
+      const tr = document.createElement("tr");
+
+      if (!agg){
+        tr.className = "empty";
+        tr.innerHTML = `
+          <td></td>
+          <td class="barrel">${r.barrel.display}</td>
+          <td class="muted">—</td>
+          <td class="muted">—</td>
+          <td class="muted">—</td>
+          <td class="muted">—</td>
+          <td class="muted">—</td>
+          <td>${r.life}</td>
+          <td class="muted">—</td>
+          <td class="muted">—</td>
+        `;
+      } else {
+        rank += 1;
+        const trendClass = agg.trend === "up" ? "trend up" : (agg.trend === "down" ? "trend down" : "trend flat");
+        const arrow = agg.trend === "up" ? "▲" : (agg.trend === "down" ? "▼" : "▬");
+        tr.className = rowGlowClass(agg.conf);
+        tr.innerHTML = `
+          <td class="ranknum">${rank}</td>
+          <td class="barrel">${r.barrel.display}</td>
+          <td class="score">${agg.score.toFixed(1)}</td>
+          <td class="conf ${agg.conf}">${CONF_LABEL[agg.conf] || agg.conf}</td>
+          <td><strong>${agg.vert.toFixed(2)}</strong></td>
+          <td>${agg.mr.toFixed(2)}</td>
+          <td>${agg.sd.toFixed(1)}</td>
+          <td>${r.life}</td>
+          <td class="${trendClass}">
+            <span class="trendwrap">
+              <span class="arrow">${arrow}</span>
+              ${trendSparkSVG(agg.trend)}
+            </span>
+          </td>
+          <td>${agg.last ? fmtDateShort(agg.last) : "—"}</td>
+        `;
+
+        tr.addEventListener("click", () => {
+          state.selectedBarrelId = r.barrel.id;
+          state.detailMode = "timeline";
+          state.draft = null;
+          renderDetail();
+          [...body.querySelectorAll("tr")].forEach(x => x.style.outline = "");
+          tr.style.outline = "2px solid rgba(99,102,241,.35)";
+          tr.style.outlineOffset = "-2px";
+        });
+      }
+
+      body.appendChild(tr);
+    }
+  }
+
+  function renderDetail(){
+
+    // UI mode tweaks: keep "Form window" control out of Import view
+    const selWindowEl = $("selWindow");
+    if (selWindowEl){
+      selWindowEl.style.display = (state.detailMode === "import") ? "none" : "";
+    }
+  const id = state.selectedBarrelId;
+  const title = $("detailTitle");
+  const sub = $("detailSub");
+  const meta = $("detailMeta");
+  const actions = $("detailActions");
+  const body = $("detailBody");
+
+  if (!actions) return;
+
+  // nothing selected: guide user + allow quick add barrel
+  if (!id){
+    title.textContent = "Select a barrel row";
+    sub.textContent = "Click a row in the ranking strip to preview its timeline list — then import or add sessions from the drawer.";
+    meta.textContent = "";
+    actions.innerHTML = `<button class="btn sm primary" id="btnQuickImport" disabled title="Select a barrel first">Import</button><button class="btn sm" id="btnQuickManual" disabled title="Select a barrel first">+ Manual</button>`;
+    body.innerHTML = `
+      <div class="mini">
+        No barrel selected yet.
+        <br/><br/>
+        <b>Tip:</b> Click any barrel row, then use <b>+ Add session</b> here to enter a manual session.
+        <br/><br/>
+        ${state.barrels.length ? "" : `<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);">
+            <div style="font-weight:800;margin-bottom:8px;">Quick add a barrel (spec build)</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+              <input id="quickBarrelId" class="select" style="min-width:160px;" placeholder="e.g., B1" />
+              <button class="btn sm" id="btnQuickAddBarrel">Add barrel</button>
+            </div>
+            <div class="mini" style="margin-top:8px;">This is only for the spec build so you can test the drawer without imports.</div>
+          </div>`}
+      </div>
+    `;
+
+    const qb = $("btnQuickAddBarrel");
+    if (qb){
+      qb.addEventListener("click", () => {
+        const v = ($("quickBarrelId")?.value || "").trim();
+        const b = ensureBarrel(v);
+        if (!b) return;
+        state.selectedBarrelId = b.id;
+        state.detailMode = "timeline";
+        render();
+      });
+    }
+    return;
+  }
+
+  const b = state.barrels.find(x => x.id === id) || { id, display: id };
+  const list = sessionsForBarrel(id).sort((a,b) => (a.date < b.date ? 1 : -1));
+  const agg = aggregate(id);
+
+  // actions
+  if (state.detailMode === "manual"){
+    actions.innerHTML = `
+      <button class="btn sm" id="btnBackToTimeline">Back</button>
+      <button class="btn sm primary" id="btnSaveSession">Save session</button>
+    `;
+  } else if (state.detailMode === "import"){
+    actions.innerHTML = `
+      <button class="btn sm" id="btnBackToTimeline">Back</button>
+      <button class="btn sm" id="btnOpenManual">+ Manual</button>
+    `;
+  } else {
+    actions.innerHTML = `
+      <button class="btn sm primary" id="btnOpenImport">Import</button>
+      <button class="btn sm" id="btnOpenManual">+ Manual</button>
+    `;
+  }
+
+  // header copy
+  title.textContent = state.detailMode === "manual" ? `${b.display} — Manual Session` : (state.detailMode === "import" ? `${b.display} — Import` : `${b.display} — Timeline`);
+  sub.textContent = agg
+    ? `Current form window: last ${state.windowRounds} rounds · Confidence: ${CONF_LABEL[agg.conf]}`
+    : `No sessions yet`;
+  meta.textContent = `Life: ${lifeRounds(id)} rds`;
+
+  if (state.detailMode === "manual"){
+    if (!state.draft) state.draft = defaultDraft(id);
+    state.draft.barrelId = id;
+
+    body.innerHTML = `
+      <div class="sessionRow" style="margin-bottom:14px;">
+        <div class="sessionTitle">Manual session entry</div>
+        <div class="mini" style="margin-top:6px;">This creates a session row that immediately feeds the ranking strip and timeline.</div>
+      </div>
+
+      <div class="sessionRow" id="previewWrap" style="margin-bottom:14px;opacity:.95;">
+        <div class="sessionTitle">Preview</div>
+        <div class="mini" style="margin-top:6px;color:var(--muted);">This is exactly how the session will appear in the timeline.</div>
+        <div style="margin-top:10px;" id="previewRow"></div>
+      </div>
+
+      </div>
+
+      <div class="kpis" style="grid-template-columns:repeat(2,minmax(0,1fr));">
+        <div class="kpi">
+          <div class="lbl">Date</div>
+          <input id="fDate" type="date" class="select" style="width:100%;margin-top:6px;" />
+        </div>
+        <div class="kpi">
+          <div class="lbl">Confidence</div>
+          <select id="fConf" class="select" style="width:100%;margin-top:6px;">
+            <option value="low">Low</option>
+            <option value="mod">Moderate</option>
+            <option value="high">High</option>
+          </select>
+          <div class="mini" id="confHint" style="margin-top:6px;color:var(--muted);">Suggested confidence: —</div>
+        </div>
+      </div>
+
+      <div class="kpi" style="margin-bottom:12px;">
+        <div class="lbl">Label (shows in timeline)</div>
+        <input id="fLabel" class="select" style="width:100%;margin-top:6px;" placeholder="e.g., Oct 11 2025 — M2 R1 TT9-218 — #218 (T9-218)" />
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;">
+          <label class="toggle" style="padding:6px 10px;"><input id="fSighters" type="checkbox" /> Sighters session</label>
+          <div class="mini">If unchecked, this counts as record shots.</div>
+        </div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi">
+          <div class="lbl">Shots used</div>
+          <input id="fUsed" type="number" min="0" step="1" class="select" style="width:100%;margin-top:6px;" />
+        </div>
+        <div class="kpi">
+          <div class="lbl">Shots total</div>
+          <input id="fTotal" type="number" min="0" step="1" class="select" style="width:100%;margin-top:6px;" />
+        </div>
+        <div class="kpi">
+          <div class="lbl">Vert (MOA)</div>
+          <input id="fVert" type="number" step="0.01" class="select" style="width:100%;margin-top:6px;" />
+        </div>
+        <div class="kpi">
+          <div class="lbl">MR (MOA)</div>
+          <input id="fMR" type="number" step="0.01" class="select" style="width:100%;margin-top:6px;" />
+        </div>
+        <div class="kpi">
+          <div class="lbl">SD (fps)</div>
+          <input id="fSD" type="number" step="0.1" class="select" style="width:100%;margin-top:6px;" />
+        </div>
+        <div class="kpi">
+          <div class="lbl">Source file (optional)</div>
+          <input id="fFile" class="select" style="width:100%;margin-top:6px;" placeholder="Rifle_Bullet_YYYY-MM-DD_..." />
+        </div>
+      </div>
+
+      <details style="margin-top:10px;">
+        <summary style="cursor:pointer;color:#c7d2fe;font-weight:800;">Optional notes</summary>
+        <div style="margin-top:10px;">
+          <textarea id="fNotes" class="select" style="width:100%;min-height:90px;resize:vertical;" placeholder="Notes (wind, mirage, call quality, equipment changes, etc.)"></textarea>
+        </div>
+      </details>
+
+      <div class="mini" id="formErr" style="margin-top:10px;color:#fca5a5;display:none;"></div>
+    `;
+
+    // hydrate fields
+    $("fDate").value = state.draft.date || "";
+    $("fConf").value = state.draft.confidence || "mod";
+    $("fLabel").value = state.draft.label || "";
+    $("fSighters").checked = !!state.draft.isSighters;
+    $("fUsed").value = String(state.draft.shotsUsed ?? 0);
+    $("fTotal").value = String(state.draft.shotsTotal ?? 0);
+    $("fVert").value = String(state.draft.vert ?? 0);
+    $("fMR").value = String(state.draft.mr ?? 0);
+    $("fSD").value = String(state.draft.sd ?? 0);
+    $("fFile").value = state.draft.sourceFile || "";
+    $("fNotes").value = state.draft.notes || "";
+    function suggestConfidence(d){
+      const num = (x)=> Number.isFinite(x) ? x : NaN;
+      const shots = num(d.shotsTotal);
+      const vert = num(d.vert);
+      const sd = num(d.sd);
+      const mr = num(d.mr);
+
+      if (!Number.isFinite(shots) || !Number.isFinite(vert) || !Number.isFinite(sd) || !Number.isFinite(mr)){
+        return null;
+      }
+      // Heuristic: reward enough rounds + strong vertical/SD; conservative by design.
+      if (shots >= 20 && vert <= 0.45 && sd <= 10 && mr <= 0.85) return "high";
+      if (shots >= 15 && vert <= 0.60 && sd <= 14 && mr <= 1.00) return "mod";
+      return "low";
+    }
+
+    function renderPreview(){
+      const d = state.draft || defaultDraft(id);
+      const pr = $("previewRow");
+      const hint = $("confHint");
+      if (!pr) return;
+
+      const label = (d.label || "").trim() || "(no label yet)";
+      const chips = [];
+      chips.push(`<span class="chip sighters">${d.isSighters ? "Sighters" : "Record"}</span>`);
+      if (Number.isFinite(d.shotsUsed) && Number.isFinite(d.shotsTotal) && d.shotsTotal > 0){
+        chips.push(`<span class="chip">${d.shotsUsed}/${d.shotsTotal}</span>`);
+      }
+      if (Number.isFinite(d.vert)) chips.push(`<span class="chip">Vert ${Number(d.vert).toFixed(2)} MOA</span>`);
+      if (Number.isFinite(d.mr))   chips.push(`<span class="chip">MR ${Number(d.mr).toFixed(2)} MOA</span>`);
+      if (Number.isFinite(d.sd))   chips.push(`<span class="chip">SD ${Number(d.sd).toFixed(1)} fps</span>`);
+      chips.push(`<span class="chip conf ${d.confidence}">${CONF_LABEL[d.confidence] || d.confidence}</span>`);
+
+      const sug = suggestConfidence(d);
+      if (hint){
+        if (!sug){
+          hint.textContent = "Suggested confidence: —";
+          hint.style.color = "var(--muted)";
+        } else {
+          hint.textContent = `Suggested confidence: ${CONF_LABEL[sug]}`;
+          hint.style.color = sug === "high" ? "var(--hi)" : (sug === "mod" ? "var(--mod)" : "var(--low)");
+        }
+      }
+
+      pr.innerHTML = `
+        <div class="sessionRow" style="margin:0;background:rgba(2,6,23,.20);">
+          <div class="sessionTitle">${label}</div>
+          <div class="chips">${chips.join("")}</div>
+          <div class="fileLine">${(d.sourceFile || "").trim()}</div>
+        </div>
+      `;
+    }
+
+    function syncDraftFromFields(){
+      state.draft = {
+        barrelId: id,
+        date: ($("fDate")?.value || "").trim(),
+        confidence: ($("fConf")?.value || "mod"),
+        label: ($("fLabel")?.value || "").trim(),
+        isSighters: !!$("fSighters")?.checked,
+        shotsUsed: Number(($("fUsed")?.value || "").trim()),
+        shotsTotal: Number(($("fTotal")?.value || "").trim()),
+        vert: Number(($("fVert")?.value || "").trim()),
+        mr: Number(($("fMR")?.value || "").trim()),
+        sd: Number(($("fSD")?.value || "").trim()),
+        sourceFile: ($("fFile")?.value || "").trim(),
+        notes: ($("fNotes")?.value || "").trim()
+      };
+      // guard NaNs for preview formatting
+      ["shotsUsed","shotsTotal","vert","mr","sd"].forEach(k=>{
+        if (!Number.isFinite(state.draft[k])) state.draft[k] = NaN;
+      });
+      renderPreview();
+    }
+
+    // live preview + confidence hint
+    ["fDate","fConf","fLabel","fSighters","fUsed","fTotal","fVert","fMR","fSD","fFile","fNotes"].forEach(fid=>{
+      const el = $(fid);
+      if (!el) return;
+      el.addEventListener("input", syncDraftFromFields);
+      el.addEventListener("change", syncDraftFromFields);
+    });
+    renderPreview();
+
+
+    $("btnBackToTimeline")?.addEventListener("click", closeAddSession);
+    $("btnSaveSession")?.addEventListener("click", () => {
+      const err = $("formErr");
+      const getNum = (id) => {
+        const v = ($(id)?.value ?? "").toString().trim();
+        return v === "" ? NaN : Number(v);
+      };
+
+      const draft = {
+        barrelId: id,
+        date: $("fDate")?.value || "",
+        label: ($("fLabel")?.value || "").trim(),
+        isSighters: !!$("fSighters")?.checked,
+        shotsUsed: Math.round(getNum("fUsed")),
+        shotsTotal: Math.round(getNum("fTotal")),
+        vert: getNum("fVert"),
+        mr: getNum("fMR"),
+        sd: getNum("fSD"),
+        confidence: $("fConf")?.value || "mod",
+        sourceFile: ($("fFile")?.value || "").trim(),
+        notes: ($("fNotes")?.value || "").trim()
+      };
+
+      // minimal validation
+      const problems = [];
+      if (!draft.date) problems.push("Date is required.");
+      if (!draft.label) problems.push("Label is required.");
+      if (!Number.isFinite(draft.shotsTotal) || draft.shotsTotal <= 0) problems.push("Shots total must be > 0.");
+      if (!Number.isFinite(draft.vert) || draft.vert < 0) problems.push("Vert must be a valid number.");
+      if (!Number.isFinite(draft.mr) || draft.mr < 0) problems.push("MR must be a valid number.");
+      if (!Number.isFinite(draft.sd) || draft.sd < 0) problems.push("SD must be a valid number.");
+      if (!["low","mod","high"].includes(draft.confidence)) problems.push("Confidence must be Low/Moderate/High.");
+
+      if (draft.shotsUsed > draft.shotsTotal) problems.push("Shots used cannot exceed shots total.");
+      if (draft.shotsUsed < 0) problems.push("Shots used cannot be negative.");
+
+      if (problems.length){
+        if (err){
+          err.style.display = "block";
+          err.textContent = problems.join(" ");
+        }
+        return;
+      }
+
+      const nextId = "M" + Math.random().toString(36).slice(2,9).toUpperCase();
+      state.sessions.push({
+        id: nextId,
+        barrelId: draft.barrelId,
+        date: draft.date,
+        label: draft.label,
+        isSighters: draft.isSighters,
+        shotsUsed: draft.shotsUsed,
+        shotsTotal: draft.shotsTotal,
+        mr: draft.mr,
+        vert: draft.vert,
+        sd: draft.sd,
+        confidence: draft.confidence,
+        sourceFile: draft.sourceFile,
+        sourceType: "manual",
+        notes: draft.notes
+      });
+
+      state.detailMode = "timeline";
+      state.draft = null;
+      render();
+    });
+
+    return;
+  }
+
+
+  
+if (state.detailMode === "import"){
+    if (!state.importer || state.importer.barrelId !== id){
+      state.importer = {
+        barrelId: id,
+        distanceYd: null,
+        distanceSource: null,
+        smTargets: [],    // parsed targets from ShotMarker files
+        chronoSets: [],   // parsed velocity sets
+        pairings: {},     // targetId -> chronoId
+        errors: [],
+        status: ""
+      };
+    }
+
+    const imp = state.importer;
+
+    body.innerHTML = `
+      <div class="mini" style="margin-bottom:10px;color:var(--muted);">
+        Import creates <b>session rows</b> for this barrel. Everything stays local in your browser.
+      </div>
+
+      <div class="kpis" style="margin-bottom:12px;">
+        <div class="kpi">
+          <div class="lbl">Distance</div>
+          <div class="val" style="font-size:16px;margin-top:6px;">
+            ${imp.distanceSource === "shotmarker"
+              ? `<div style="font-weight:900;">${imp.distanceYd} yd</div>`
+              : (imp.distanceSource === "inferred"
+                  ? `<div style="font-weight:900;">${imp.distanceYd} yd</div>`
+                  : `<input id="impDist" class="select" style="width:100%;" type="number" min="50" step="1" value="${imp.distanceYd ?? ""}" placeholder="e.g., 1000">`)
+            }
+          </div>
+          <div class="mini" style="margin-top:6px;color:var(--muted);">
+            ${imp.distanceSource === "shotmarker"
+              ? `Distance: ${imp.distanceYd} yd (from ShotMarker)`
+              : (imp.distanceSource === "inferred"
+                  ? `Distance: ${imp.distanceYd} yd (inferred — verify)`
+                  : `Enter distance (yd) to convert inches → MOA.`)
+            }
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="lbl">Parsed</div>
+          <div class="val" style="font-size:16px;margin-top:6px;">${imp.smTargets.length} targets · ${imp.chronoSets.length} chronos</div>
+          <div class="mini" id="impStatus" style="margin-top:6px;color:var(--muted);">${imp.status || ""}</div>
+        </div>
+      </div>
+
+      ${(imp.errors && imp.errors.length) ? `<div class="warnBox"><b>Import notes</b><br/>${imp.errors.map(e => escapeHTML(e)).join("<br/>")}</div>` : ""}
+
+      <div class="impGrid">
+        <div class="drop" id="dropSM">
+          <div class="dropTop">
+            <div>
+              <div class="dropTitle">ShotMarker target files</div>
+              <div class="dropSub">Drop <b>.csv</b> here (one or many). We’ll compute Vert & MR.</div>
+            </div>
+            <div>
+              <input id="impSMInput" type="file" accept=".csv,text/csv" multiple style="display:none">
+              <button class="btn sm" id="btnPickSM">Choose files</button>
+            </div>
+          </div>
+          <div class="fileList" id="smList"></div>
+        </div>
+
+        <div class="drop" id="dropCH">
+          <div class="dropTop">
+            <div>
+              <div class="dropTitle">Chrono files</div>
+              <div class="dropSub">Drop velocity <b>.csv</b> here. We’ll compute SD. (XLS/XLSX later.)</div>
+            </div>
+            <div>
+              <input id="impCHInput" type="file" accept=".csv,text/csv" multiple style="display:none">
+              <button class="btn sm" id="btnPickCH">Choose files</button>
+            </div>
+          </div>
+          <div class="fileList" id="chList"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;">
+        <div style="font-weight:800;letter-spacing:.15px;">Pair targets ↔ chrono</div>
+        <div class="mini" style="margin-top:6px;color:var(--muted);">Auto-pairs by order when counts match. You can change any pairing.</div>
+        <div id="pairWrap"></div>
+
+        <div class="impActions">
+          <button class="btn sm" id="btnClearImport">Clear import</button>
+          <button class="btn sm primary" id="btnGenerateSessions" ${(imp.smTargets.length ? "" : "disabled")}>Generate sessions</button>
+        </div>
+      </div>
+    `;
+
+    // wire import UI
+    const distEl = $("impDist");
+    distEl?.addEventListener("change", () => {
+      const v = parseFloat(distEl.value || "1000");
+      imp.distanceYd = Math.max(1, isFinite(v) ? v : 1000);
+      imp.distanceSource = "manual";
+      // re-compute metrics on existing targets
+      imp.smTargets = imp.smTargets.map(t => recomputeTargetMetrics(t, imp.distanceYd));
+      renderDetail();
+    });
+
+    $("btnBackToTimeline")?.addEventListener("click", closeAddSession);
+    $("btnOpenManual")?.addEventListener("click", () => openAddSession(id));
+
+    $("btnPickSM")?.addEventListener("click", () => $("impSMInput")?.click());
+    $("btnPickCH")?.addEventListener("click", () => $("impCHInput")?.click());
+
+    $("impSMInput")?.addEventListener("change", async (e) => {
+      const files = [...(e.target.files || [])];
+      await handleShotMarkerFiles(files, imp);
+      renderDetail();
+    });
+    $("impCHInput")?.addEventListener("change", async (e) => {
+      const files = [...(e.target.files || [])];
+      await handleChronoFiles(files, imp);
+      renderDetail();
+    });
+
+    wireDropZone($("dropSM"), async (files) => { await handleShotMarkerFiles(files, imp); renderDetail(); });
+    wireDropZone($("dropCH"), async (files) => { await handleChronoFiles(files, imp); renderDetail(); });
+
+    $("btnClearImport")?.addEventListener("click", () => {
+      state.importer = { barrelId:id, distanceYd: imp.distanceYd || 1000, smTargets:[], chronoSets:[], pairings:{}, errors:[], status:"" };
+      renderDetail();
+    });
+
+    // render lists + pairings
+    renderImportListsAndPairings(imp);
+
+    $("btnGenerateSessions")?.addEventListener("click", () => {
+      generateSessionsFromImport(imp);
+      state.detailMode = "timeline";
+      state.importer.status = "Sessions generated.";
+      render();
+    });
+
+    return;
+  }
+
+
+  // timeline mode
+  const sessionHtml = list.length ? list.map(s => {
+    const chips = [];
+    chips.push(`<span class="chip sighters">${s.isSighters ? "Sighters" : "Record"}</span>`);
+    if (s.shotsUsed && s.shotsTotal) chips.push(`<span class="chip">${s.shotsUsed}/${s.shotsTotal}</span>`);
+    chips.push(`<span class="chip">Vert ${s.vert.toFixed(2)} MOA</span>`);
+    chips.push(`<span class="chip">MR ${s.mr.toFixed(2)} MOA</span>`);
+    chips.push(`<span class="chip">SD ${s.sd.toFixed(1)} fps</span>`);
+    chips.push(`<span class="chip conf ${s.confidence}">${CONF_LABEL[s.confidence] || s.confidence}</span>`);
+
+    return `
+      <div class="sessionRow">
+        <div class="sessionTitle">${s.label}</div>
+        <div class="chips">${chips.join("")}</div>
+        <div class="fileLine">${s.sourceFile || ""}</div>
+      </div>
+    `;
+  }).join("") : `
+    <div class="mini">
+      No sessions yet for this barrel.
+      <br/><br/>
+      Use <b>+ Add session</b> to enter a manual session (imports get wired after).
     </div>
-  `).join(''):'<div class="small">No sessions yet.</div>';
+  `;
+
+  body.innerHTML = sessionHtml;
+
+  $("btnOpenImport")?.addEventListener("click", () => openImport(id));
+  $("btnOpenManual")?.addEventListener("click", () => openAddSession(id));
+  $("btnBackToTimeline")?.addEventListener("click", closeAddSession);
 }
 
-render();
+  function renderLabels(){
+    $("lblWindow").textContent = String(state.windowRounds);
+    $("lblMinConf").textContent = CONF_LABEL[state.minConf] || "Moderate";
+    $("lblSighters").textContent = state.showSighters ? "Show sighters" : "Hide sighters";
+    const sw = $("selWindow");
+    if (sw) sw.style.display = (state.detailMode === "import") ? "none" : "";
+  }
+
+  function render(){
+    document.body.dataset.mode = state.detailMode || "ranking";
+    renderLabels();
+    renderRanking();
+    renderDetail();
+
+    // Hide form-window control during Import view (keep only in ranking header)
+    const win = $("selWindow");
+    if (win) win.style.display = (state.detailMode === "import") ? "none" : "";
+  }
+
+  function wire(){
+    $("selWindow").addEventListener("change", (e) => {
+      state.windowRounds = parseInt(e.target.value, 10);
+      render();
+    });
+    $("selMinConf").addEventListener("change", (e) => {
+      state.minConf = e.target.value;
+      render();
+    });
+    $("chkSighters").addEventListener("change", (e) => {
+      state.showSighters = !!e.target.checked;
+      render();
+    });
+
+        $("btnClear").addEventListener("click", clearAll);
+
+    $("btnImportGlobal").addEventListener("click", () => {
+      if (!state.selectedBarrelId){
+        alert("Select a barrel row first, then import.");
+        return;
+      }
+      openImport(state.selectedBarrelId);
+    });
+
+    
+    $("btnExport").addEventListener("click", () => {
+      // Export everything (barrels + sessions) as JSON
+      const payload = buildExportPayload();
+      const ymd = payload.created_at.slice(0,10);
+      downloadText(`BarrelTracker_export_${ymd}.json`, JSON.stringify(payload, null, 2), "application/json");
+    });
+
+
+    $("btnImportJSON").addEventListener("click", () => {
+      $("fileImportJSON").value = "";
+      $("fileImportJSON").click();
+    });
+
+    $("fileImportJSON").addEventListener("change", async (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      try{
+        const text = await f.text();
+        const payload = JSON.parse(text);
+
+        // Basic validation
+        const ok = payload && payload.app === "BarrelTracker" && payload.state && Array.isArray(payload.state.barrels) && Array.isArray(payload.state.sessions);
+        if (!ok){
+          alert("That JSON doesn't look like a BarrelTracker export.");
+          return;
+        }
+
+        const replace = confirm("Import JSON:\n\nOK = REPLACE current barrels + sessions\nCancel = MERGE (keep existing, add/overwrite by id)");
+        if (replace){
+          state.barrels = payload.state.barrels || [];
+          state.sessions = payload.state.sessions || [];
+        } else {
+          // Merge barrels by id
+          const bMap = new Map((state.barrels||[]).map(b => [b.id, b]));
+          for (const b of (payload.state.barrels||[])){
+            if (!b || !b.id) continue;
+            bMap.set(b.id, b);
+          }
+          state.barrels = [...bMap.values()];
+
+          // Merge sessions by id (import overwrites same id)
+          const sMap = new Map((state.sessions||[]).map(s => [s.id, s]));
+          for (const s of (payload.state.sessions||[])){
+            if (!s || !s.id) continue;
+            sMap.set(s.id, s);
+          }
+          state.sessions = [...sMap.values()];
+        }
+
+        // Restore settings if present
+        const set = payload.state.settings || {};
+        if (set.windowRounds) state.windowRounds = set.windowRounds;
+        if (set.minConfidence) state.minConfidence = set.minConfidence;
+        if (typeof set.showSighters === "boolean") state.showSighters = set.showSighters;
+
+        // Ensure we have a selected barrel
+        if (!state.selectedBarrelId || !state.barrels.find(b => b.id === state.selectedBarrelId)){
+          state.selectedBarrelId = (state.barrels[0] && state.barrels[0].id) ? state.barrels[0].id : null;
+        }
+
+        state.detailMode = "list";
+        render();
+      }catch(err){
+        alert("Import failed: " + String(err && err.message ? err.message : err));
+      }
+    });
+
+
+$("btnAddBarrel").addEventListener("click", () => {
+      const pop = $("barrelPop");
+      pop.style.display = (pop.style.display === "block") ? "none" : "block";
+      $("inpBarrelId").focus();
+    });
+
+    $("btnBarrelCancel").addEventListener("click", () => {
+      $("barrelPop").style.display = "none";
+    });
+
+    $("inpBarrelTwist").addEventListener("change", (e) => {
+      const v = e.target.value;
+      const cust = $("inpBarrelTwistCustom");
+      if (!cust) return;
+      cust.style.display = (v === "custom") ? "" : "none";
+      if (v !== "custom") cust.value = "";
+    });
+
+
+    $("btnBarrelSave").addEventListener("click", () => {
+      const bid = ($("inpBarrelId").value || "").trim();
+      if (!bid){
+        alert("Enter a barrel ID (e.g., B6).");
+        return;
+      }
+      const twistSel = $("inpBarrelTwist").value || "";
+      const twist = (twistSel === "custom") ? (String($("inpBarrelTwistCustom").value || "").trim()) : twistSel;
+      const b = ensureBarrel(bid);
+      if (twist) b.twist = twist;
+      state.selectedBarrelId = b.id;
+      state.detailMode = "timeline";
+      state.draft = null;
+      $("barrelPop").style.display = "none";
+      $("inpBarrelId").value = "";
+      $("inpBarrelTwist").value = "";
+      $("inpBarrelTwistCustom").value = "";
+      $("inpBarrelTwistCustom").style.display = "none";
+      render();
+    });
+}
+
+  document.addEventListener("DOMContentLoaded", () => {
+    wire();
+    render();
+  });
+})();
 </script>
 </body>
 </html>
