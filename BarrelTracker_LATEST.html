@@ -798,7 +798,369 @@ function parseCSV(text){
   }
 
 
-  function normKey(k){
+  
+  // --- Minimal XLS (BIFF8) reader for Garmin-style chrono exports (.xls) ---
+  // This is NOT a full Excel engine. It extracts the first worksheet as a simple table
+  // and is tuned for small, single-sheet exports (like Garmin "Rifle_Bullet_*.xls").
+  // It supports common cell types: NUMBER, RK, MULRK, LABELSST (via SST), and inline LABEL.
+  
+  // --- Robust XLS (BIFF8) reader for Garmin-style chrono exports (.xls) ---
+  // Purpose-built: extracts FIRST worksheet into a simple table of strings.
+  // Supports the Garmin chrono exports we've seen (strings stored via SST + LABELSST).
+  // Not a full Excel engine; no formulas/styles.
+  function parseXLS(arrayBuffer){
+    const u8 = new Uint8Array(arrayBuffer);
+    const wbU8 = oleExtractStream(u8, ["Workbook","Book"]);
+    if (!wbU8) throw new Error("XLS: couldn't find Workbook stream");
+    const view = new DataView(wbU8.buffer, wbU8.byteOffset, wbU8.byteLength);
+
+    function readRecAt(off){
+      if (off + 4 > view.byteLength) return null;
+      const rt = view.getUint16(off, true);
+      const rl = view.getUint16(off+2, true);
+      const ro = off + 4;
+      const no = ro + rl;
+      if (no > view.byteLength) return null;
+      return { rt, rl, ro, no };
+    }
+
+    // Parse SST (Shared String Table)
+    function readXLUnicodeStringAt(o){
+      const cch = view.getUint16(o, true); o += 2;
+      const flags = view.getUint8(o); o += 1;
+      const fHighByte = (flags & 0x01) !== 0;
+      const fRichSt = (flags & 0x08) !== 0;
+      const fExtSt  = (flags & 0x04) !== 0;
+      let cRun = 0, cbExtRst = 0;
+      if (fRichSt){ cRun = view.getUint16(o, true); o += 2; }
+      if (fExtSt){ cbExtRst = view.getUint32(o, true); o += 4; }
+      let str = "";
+      if (cch > 0){
+        if (fHighByte){
+          const bytes = new Uint8Array(wbU8.buffer, wbU8.byteOffset + o, cch*2);
+          str = new TextDecoder("utf-16le").decode(bytes);
+          o += cch*2;
+        }else{
+          const bytes = new Uint8Array(wbU8.buffer, wbU8.byteOffset + o, cch);
+          str = new TextDecoder("latin1").decode(bytes);
+          o += cch;
+        }
+      }
+      if (fRichSt) o += cRun * 4;
+      if (fExtSt)  o += cbExtRst;
+      return { str, next: o };
+    }
+
+    let sst = [];
+    let sheetOffset = null;
+
+    // First pass: find BOUNDSHEET and SST in globals stream
+    let off = 0;
+    while (true){
+      const r = readRecAt(off);
+      if (!r) break;
+
+      if (r.rt === 0x0085 && r.rl >= 6 && sheetOffset == null){
+        sheetOffset = view.getUint32(r.ro + 0, true);
+      }
+      if (r.rt === 0x00FC && r.rl >= 8){
+        // SST payload begins at r.ro
+        let o = r.ro;
+        const total = view.getUint32(o, true); o += 4;
+        const unique = view.getUint32(o, true); o += 4;
+        sst = [];
+        for (let i=0; i<unique; i++){
+          const res = readXLUnicodeStringAt(o);
+          sst.push(res.str);
+          o = res.next;
+          if (o >= view.byteLength) break;
+        }
+      }
+
+      off = r.no;
+      if (off >= view.byteLength) break;
+    }
+
+    if (sheetOffset == null){
+      // fallback: scan for first worksheet BOF and treat that as sheet start
+      off = 0;
+      while (true){
+        const r = readRecAt(off);
+        if (!r) break;
+        if (r.rt === 0x0809 && r.rl >= 4){
+          const bofType = view.getUint16(r.ro + 2, true);
+          if (bofType === 0x0010){ sheetOffset = off; break; }
+        }
+        off = r.no;
+      }
+    }
+    if (sheetOffset == null) throw new Error("XLS: couldn't locate worksheet");
+
+    // Second pass: parse worksheet cells
+    const cells = new Map(); // "r,c" => value string
+    const key = (r,c)=> r + "," + c;
+    let maxR = 0, maxC = 0;
+
+    off = sheetOffset;
+    while (true){
+      const r = readRecAt(off);
+      if (!r) break;
+      const t = r.rt;
+
+      if (t === 0x000A){ break; } // EOF ends sheet
+
+      // LABELSST: row(2), col(2), xf(2), sstIndex(4)
+      if (t === 0x00FD && r.rl >= 10){
+        const row = view.getUint16(r.ro + 0, true);
+        const col = view.getUint16(r.ro + 2, true);
+        const sstIdx = view.getUint32(r.ro + 6, true);
+        const val = (sstIdx < sst.length) ? sst[sstIdx] : "";
+        cells.set(key(row,col), val);
+        if (row > maxR) maxR = row;
+        if (col > maxC) maxC = col;
+      }
+
+      // LABEL (inline string): row, col, xf, cch(2), bytes
+      if (t === 0x0204 && r.rl >= 8){
+        const row = view.getUint16(r.ro + 0, true);
+        const col = view.getUint16(r.ro + 2, true);
+        const cch = view.getUint16(r.ro + 6, true);
+        const bytes = new Uint8Array(wbU8.buffer, wbU8.byteOffset + r.ro + 8, cch);
+        const val = new TextDecoder("latin1").decode(bytes);
+        cells.set(key(row,col), val);
+        if (row > maxR) maxR = row;
+        if (col > maxC) maxC = col;
+      }
+
+      off = r.no;
+      if (off >= view.byteLength) break;
+    }
+
+    // Build table
+    const table = [];
+    for (let r=0; r<=maxR; r++){
+      const row = [];
+      for (let c=0; c<=maxC; c++){
+        row.push(cells.get(key(r,c)) ?? "");
+      }
+      table.push(row);
+    }
+
+    // Trim empty trailing rows
+    while (table.length && table[table.length-1].every(v => String(v||"").trim()==="")) table.pop();
+    // Trim empty trailing cols
+    if (table.length){
+      let cols = table[0].length;
+      while (cols>0){
+        let empty=true;
+        for (let r=0; r<table.length; r++){
+          if (String(table[r][cols-1]||"").trim()!==""){ empty=false; break; }
+        }
+        if (!empty) break;
+        cols--;
+      }
+      table.forEach(r=> r.length=cols);
+    }
+
+    // Convert to {headers, rows} like parseCSV
+    const headerRow = table[0] || [];
+    const headers = headerRow.map((h,ci) => {
+      const s = String(h||"").trim();
+      return s.length ? s : ("COL_" + (ci+1));
+    });
+    const rows = [];
+    for (let i=1; i<table.length; i++){
+      const r = table[i];
+      const obj = {};
+      for (let c=0; c<headers.length; c++){
+        obj[headers[c]] = (r[c] ?? "");
+      }
+      const hasAny = Object.values(obj).some(v => String(v).trim().length);
+      if (hasAny) rows.push(obj);
+    }
+    return { headers, rows };
+  }
+
+
+  function decodeRK(rk){
+    // RK: lowest 2 bits are flags.
+    const fX100 = (rk & 0x01) !== 0;
+    const fInt  = (rk & 0x02) !== 0;
+    let val;
+    if (fInt){
+      // signed 30-bit int in high bits
+      val = (rk & 0xFFFFFFFC) >> 2;
+      // sign extend
+      if (val & 0x20000000) val = val - 0x40000000;
+    }else{
+      // 30-bit IEEE 754 (high) -> double; build 8 bytes
+      const hi = rk & 0xFFFFFFFC;
+      const buf = new ArrayBuffer(8);
+      const dv = new DataView(buf);
+      dv.setUint32(4, hi, true);
+      dv.setUint32(0, 0, true);
+      val = dv.getFloat64(0, true);
+    }
+    return fX100 ? (val / 100) : val;
+  }
+
+  function oleExtractStream(u8, names){
+    // Very small OLE2 reader enough to extract a named stream.
+    const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+    // magic D0 CF 11 E0 A1 B1 1A E1
+    if (dv.getUint32(0, false) !== 0xD0CF11E0) return null;
+
+    const secShift = dv.getUint16(30, true);
+    const miniShift = dv.getUint16(32, true);
+    const secSize = 1 << secShift;
+    const miniSize = 1 << miniShift;
+
+    const numFATSectors = dv.getUint32(44, true);
+    const firstDirSec = dv.getInt32(48, true);
+    const miniCutoff = dv.getUint32(56, true);
+    const firstMiniFATSec = dv.getInt32(60, true);
+    const numMiniFATSectors = dv.getUint32(64, true);
+    const firstDIFATSec = dv.getInt32(68, true);
+    const numDIFATSectors = dv.getUint32(72, true);
+
+    const END = -2, FREE = -1;
+
+    function secOffset(sid){ return (sid + 1) * secSize; }
+
+    // Build DIFAT
+    const difat = [];
+    // header DIFAT entries (109)
+    let o=76;
+    for (let i=0;i<109;i++){
+      const sid = dv.getInt32(o + i*4, true);
+      if (sid >= 0) difat.push(sid);
+    }
+    // DIFAT chain
+    let next = firstDIFATSec;
+    for (let n=0; n<numDIFATSectors && next>=0; n++){
+      const base = secOffset(next);
+      const dv2 = new DataView(u8.buffer, u8.byteOffset + base, secSize);
+      for (let i=0;i<(secSize/4)-1;i++){
+        const sid = dv2.getInt32(i*4, true);
+        if (sid >= 0) difat.push(sid);
+      }
+      next = dv2.getInt32(secSize-4, true);
+    }
+
+    // Read FAT sectors
+    const fat = [];
+    for (const sid of difat){
+      const base = secOffset(sid);
+      const dvF = new DataView(u8.buffer, u8.byteOffset + base, secSize);
+      for (let i=0;i<secSize/4;i++){
+        fat.push(dvF.getInt32(i*4, true));
+      }
+    }
+
+    function readChain(firstSid, size){
+      if (firstSid < 0) return new Uint8Array(0);
+      const out = new Uint8Array(size);
+      let sid = firstSid;
+      let pos=0;
+      while (sid >= 0 && sid !== END && pos < size){
+        const base = secOffset(sid);
+        const chunk = Math.min(secSize, size - pos);
+        out.set(new Uint8Array(u8.buffer, u8.byteOffset + base, chunk), pos);
+        pos += chunk;
+        sid = fat[sid];
+      }
+      return out;
+    }
+
+    // Directory stream
+    // Directory size isn't in header; read a generous amount by following chain until END
+    // We'll read up to 1MB max for safety.
+    const dirChunks = [];
+    let sid = firstDirSec;
+    let safety=0;
+    while (sid >= 0 && sid !== END && safety < 4096){
+      dirChunks.push(new Uint8Array(u8.buffer, u8.byteOffset + secOffset(sid), secSize));
+      sid = fat[sid];
+      safety++;
+    }
+    const dirBytes = concatU8(dirChunks);
+    const dirDV = new DataView(dirBytes.buffer, dirBytes.byteOffset, dirBytes.byteLength);
+
+    // Root entry provides mini stream start
+    function readDirEntry(i){
+      const base = i*128;
+      if (base+128 > dirBytes.byteLength) return null;
+      const nameLen = dirDV.getUint16(base+64, true);
+      let name = "";
+      for (let j=0;j<nameLen/2-1;j++){
+        name += String.fromCharCode(dirDV.getUint16(base + j*2, true));
+      }
+      const type = dirDV.getUint8(base+66);
+      const startSid = dirDV.getInt32(base+116, true);
+      const sizeLo = dirDV.getUint32(base+120, true);
+      // sizeHi ignored
+      return { name, type, startSid, size: sizeLo };
+    }
+
+    const entries = [];
+    for (let i=0;i<dirBytes.byteLength/128;i++){
+      const e = readDirEntry(i);
+      if (e && e.name) entries.push(e);
+    }
+
+    const root = entries.find(e => e.type === 5) || entries[0];
+    const miniStream = root ? readChain(root.startSid, root.size) : new Uint8Array(0);
+
+    // MiniFAT
+    let miniFat = [];
+    if (numMiniFATSectors && firstMiniFATSec >= 0){
+      const miniFatBytes = readChain(firstMiniFATSec, numMiniFATSectors * secSize);
+      const dvM = new DataView(miniFatBytes.buffer, miniFatBytes.byteOffset, miniFatBytes.byteLength);
+      for (let i=0;i<dvM.byteLength/4;i++){
+        miniFat.push(dvM.getInt32(i*4, true));
+      }
+    }
+
+    function readMiniChain(firstSid, size){
+      const out = new Uint8Array(size);
+      let sid = firstSid;
+      let pos=0;
+      const miniPerSec = secSize / miniSize;
+      while (sid >= 0 && sid !== END && pos < size){
+        const base = sid * miniSize;
+        const chunk = Math.min(miniSize, size - pos);
+        out.set(miniStream.slice(base, base + chunk), pos);
+        pos += chunk;
+        sid = miniFat[sid];
+      }
+      return out;
+    }
+
+    // Find desired stream
+    const wantNames = (names||[]).map(n => String(n||"").toLowerCase());
+    let want = entries.find(e => wantNames.includes(String(e.name||"").toLowerCase()));
+    if (!want){
+      // fallback: common variants
+      want = entries.find(e => String(e.name||"").toLowerCase().includes("workbook")) ||
+             entries.find(e => String(e.name||"").toLowerCase().includes("book"));
+    }
+    if (!want) return null;
+
+    const data = (want.size < miniCutoff) ? readMiniChain(want.startSid, want.size)
+                                          : readChain(want.startSid, want.size);
+    return data;
+  }
+
+  function concatU8(chunks){
+    let total=0;
+    for (const c of chunks) total += c.byteLength;
+    const out = new Uint8Array(total);
+    let p=0;
+    for (const c of chunks){ out.set(c, p); p += c.byteLength; }
+    return out;
+  }
+
+function normKey(k){
     return String(k || "").toLowerCase().replace(/[^a-z0-9]+/g,"").trim();
   }
 
@@ -983,20 +1345,45 @@ function parseCSV(text){
     imp.status = imp.smTargets.length ? "ShotMarker targets parsed." : imp.status;
   }
 
-  async function handleChronoFiles(files, imp){
+  
+async function handleChronoFiles(files, imp){
     imp.errors = imp.errors || [];
     imp.status = "";
-    const csvFiles = files.filter(f => /\.csv$/i.test(f.name));
-    if (!csvFiles.length){
-      imp.errors.push("Chrono: please use CSV exports for now (XLS/XLSX support comes next).");
+    imp.chronoSets = Array.isArray(imp.chronoSets) ? imp.chronoSets : [];
+    imp.chronoSets.length = 0;
+
+    const allFiles = Array.from(files || []);
+    const csvFiles = allFiles.filter(f => /\.csv$/i.test(f.name));
+    const xlsFiles = allFiles.filter(f => /\.(xls|xlsx)$/i.test(f.name)); // xlsx reserved; we parse only .xls for now
+
+    if (!csvFiles.length && !xlsFiles.length){
+      imp.errors.push("Chrono: please choose Garmin chronograph exports (.csv or .xls).");
       return;
     }
 
-    for (const f of csvFiles){
-      try{
+    // Helper: parse a chrono file into {headers, rows}
+    async function parseChronoFile(f){
+      if (/\.csv$/i.test(f.name)){
         const text = await f.text();
-        const parsed = parseCSV(text);
+        return parseCSV(text);
+      }
+      if (/\.xls$/i.test(f.name)){
+        const ab = await f.arrayBuffer();
+        return parseXLS(ab);
+      }
+      if (/\.xlsx$/i.test(f.name)){
+        throw new Error("XLSX not supported yet (use .xls or .csv).");
+      }
+      throw new Error("Unsupported chrono type: " + f.name);
+    }
+
+    const chronoFiles = csvFiles.concat(xlsFiles);
+
+    for (const f of chronoFiles){
+      try{
+        const parsed = await parseChronoFile(f);
         const headers = parsed.headers || [];
+
         // attempt to find velocity column (robust):
         // 1) prefer known header names
         // 2) otherwise score numeric columns by "fps plausibility"
@@ -1013,7 +1400,6 @@ function parseCSV(text){
           const mean = inRange.reduce((p,c)=>p+c,0)/inRange.length;
           const sd = Math.sqrt(inRange.reduce((p,c)=>p+Math.pow(c-mean,2),0)/inRange.length);
 
-          // Prefer realistic rifle mean/sd ranges (still flexible)
           let s = 0;
           if (mean > 1500 && mean < 3500) s += 2;
           if (sd >= 1 && sd < 80) s += 2;
@@ -1053,29 +1439,29 @@ function parseCSV(text){
           }
         }
 
-        if (vals.length < 3){
+        if (vals.length < 6){
           imp.errors.push(`Chrono "${f.name}": couldn't find a velocity column with enough values.`);
           continue;
         }
 
-        const date = parseDateFromFilename(f.name) || null;
-        const cid = `C_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        const mean = vals.reduce((a,b)=>a+b,0)/vals.length;
+        const sd = Math.sqrt(vals.reduce((a,b)=>a+Math.pow(b-mean,2),0)/vals.length);
+
         imp.chronoSets.push({
-          id: cid,
+          id: "CH_" + Math.random().toString(16).slice(2),
           fileName: f.name,
-          date,
           shotsTotal: vals.length,
-          sd: sampleSD(vals),
-          avg: mean(vals)
+          avg: mean,
+          sd: sd
         });
-      }catch(err){
-        imp.errors.push(`Chrono "${f.name}": parse failed (${String(err?.message || err)}).`);
+
+      }catch(e){
+        imp.errors.push(`Chrono "${f.name}": ${e.message || e}`);
       }
     }
-
-    autoPair(imp);
-    imp.status = imp.chronoSets.length ? "Chrono files parsed." : imp.status;
   }
+
+
 
   function autoPair(imp){
     if (!imp || !imp.smTargets) return;
@@ -1828,7 +2214,7 @@ if (state.detailMode === "import"){
               <div class="dropSub">Drop velocity <b>.csv</b> here. We’ll compute SD. (XLS/XLSX later.)</div>
             </div>
             <div>
-              <input id="impCHInput" type="file" accept=".csv,text/csv" multiple style="display:none">
+              <input id="impCHInput" type="file" accept=".csv,.xls,application/vnd.ms-excel,text/csv" multiple style="display:none">
               <button class="btn sm" id="btnPickCH">Choose files</button>
             </div>
           </div>
