@@ -364,6 +364,61 @@
 
   body[data-mode="import"] #selWindow{display:none!important;}
 
+
+  /* Session Edit Modal */
+  body.modalOpen{overflow:hidden!important;}
+
+  .modalOverlay{
+    position:fixed; inset:0;
+    background:rgba(2,6,23,.72);
+    backdrop-filter: blur(6px);
+    display:none;
+    align-items:flex-start;
+    justify-content:center;
+    padding:40px 14px;
+    overflow:auto;
+    overscroll-behavior:contain;
+    z-index:9999;
+  }
+  .modalCard{
+    width:min(860px, 96vw);
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(15,23,42,.92);
+    border-radius:18px;
+    box-shadow:0 18px 55px rgba(0,0,0,.45);
+    overflow:hidden;
+    max-height: calc(100vh - 80px);
+    display:flex;
+    flex-direction:column;
+  }
+  .modalHead{
+    padding:14px 16px;
+    border-bottom:1px solid rgba(255,255,255,.10);
+    display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+  }
+  .modalHead h3{margin:0;font-size:15px}
+  .modalBody{padding:14px 16px; overflow:auto; flex:1}
+  .modalFoot{
+    padding:14px 16px;
+    border-top:1px solid rgba(255,255,255,.10);
+    display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; align-items:center;
+  }
+  .iconBtn{
+    border:1px solid rgba(255,255,255,.12);
+    background:rgba(2,6,23,.35);
+    color:var(--text);
+    border-radius:12px;
+    padding:6px 10px;
+    cursor:pointer;
+    font-size:12px;
+  }
+  .iconBtn:hover{background:rgba(2,6,23,.55)}
+  .sessionRow .rowTop{
+    display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+  }
+  .sessionRow{cursor:pointer}
+  .sessionRow:active{transform: translateY(0.5px)}
+
 </style>
 </head>
 <body>
@@ -559,7 +614,7 @@ importer: null
         sessions: state.sessions || [],
         settings: {
           windowRounds: state.windowRounds,
-          minConfidence: state.minConfidence,
+          minConfidence: state.minConf,
           showSighters: state.showSighters
         }
       }
@@ -783,19 +838,81 @@ function parseCSV(text){
     }
 
     return blocks
-      .filter(b => (b.rows || []).length)
-      .map((b, idx) => {
-        const nice = filename?.replace(/\.[^.]+$/,"") || "ShotMarker";
-        const base = b.sessionLine || nice;
-        const label = `${base} — ${nice}`;
-        return {
-          sourceFile: filename,
-          label,
-          headers: b.headers || [],
-          rows: b.rows || []
-        };
-      });
+  .filter(b => (b.rows || []).length)
+  .map((b, idx) => {
+    const nice = filename?.replace(/\.[^.]+$/,"") || "ShotMarker";
+    const base = b.sessionLine || nice;
+    const label = `${base} — ${nice}`;
+
+    // Extract local timestamp from the session line when present:
+    // Example: "Oct 11 2025, 08:19:43"
+    let timeMs = null;
+    const m = String(b.sessionLine||"").match(/([A-Z][a-z]{2})\s+(\d{1,2})\s+(20\d{2})(?:,\s*(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+    if (m){
+      const mon = m[1], day = String(m[2]).padStart(2,"0"), yr = m[3];
+      const months = {Jan:"01",Feb:"02",Mar:"03",Apr:"04",May:"05",Jun:"06",Jul:"07",Aug:"08",Sep:"09",Oct:"10",Nov:"11",Dec:"12"};
+      const mm = months[mon] || "01";
+      const hh = String(m[4] || "00").padStart(2,"0");
+      const mi = String(m[5] || "00").padStart(2,"0");
+      const ss = String(m[6] || "00").padStart(2,"0");
+      timeMs = new Date(`${yr}-${mm}-${day}T${hh}:${mi}:${ss}`).getTime();
+    }
+
+    return {
+      sourceFile: filename,
+      label,
+      timeMs,
+      headers: b.headers || [],
+      rows: b.rows || []
+    };
+  });
   }
+
+
+
+  // Heuristic: determine whether a ShotMarker block is a SIGHTER-only target.
+  // We keep this deterministic + conservative:
+  // - If the session line/label/filename contains "sighter" -> true
+  // - Else if there is an explicit Sighter/Type column AND ~all rows are marked sighter -> true
+  // - Otherwise -> false
+  function detectSightersFromShotMarkerBlock(block){
+    const label = String(block?.label || "");
+    const fileName = String(block?.fileName || block?.sourceFile || "");
+    const sessionLine = String(block?.sessionLine || "");
+    const hay = (label + " " + fileName + " " + sessionLine).toLowerCase();
+    if (hay.includes("sighter")) return true;
+
+    const headers = block?.headers || [];
+    const rows = block?.rows || [];
+    if (!headers.length || !rows.length) return false;
+
+    const sCol = findCol(headers, ["sighter","sighters","is sighter","issighter","shot type","shottype","type"]);
+    if (!sCol) return false;
+
+    const truthy = (v) => {
+      const s = String(v ?? "").trim().toLowerCase();
+      if (!s) return false;
+      return (s === "1" || s === "true" || s === "yes" || s === "y" || s === "s" || s === "sighter" || s === "sighters");
+    };
+
+    let marked = 0, seen = 0;
+    for (const r of rows){
+      const v = r?.[sCol];
+      if (v == null || String(v).trim()==="") continue;
+      seen++;
+      if (truthy(v)) marked++;
+      else{
+        // also treat explicit "record" / "match" as not sighter
+        const s = String(v).trim().toLowerCase();
+        if (s.includes("record") || s.includes("match")) return false;
+      }
+    }
+    if (seen < Math.max(3, Math.floor(rows.length*0.2))) return false;
+
+    const ratio = marked / seen;
+    return ratio >= 0.95;
+  }
+
 
 
   
@@ -1211,6 +1328,32 @@ function normKey(k){
     return null;
   }
 
+
+function parseDateTimeFromFilename(name){
+  const s = String(name || "");
+  // Common Garmin patterns:
+  // - 2025-10-11_08-19-43
+  // - 20251011_081943
+  // - 2025_10_11 08_19_43
+  let m = s.match(/(20\d{2})[-_](\d{2})[-_](\d{2}).*?(\d{2})[-_](\d{2})[-_](\d{2})/);
+  if (m){
+    const date = `${m[1]}-${m[2]}-${m[3]}`;
+    const hh = m[4], mi = m[5], ss = m[6];
+    const timeMs = new Date(`${date}T${hh}:${mi}:${ss}`).getTime();
+    return { date, timeMs };
+  }
+  m = s.match(/(20\d{2})(\d{2})(\d{2}).*?(\d{2})(\d{2})(\d{2})/);
+  if (m){
+    const date = `${m[1]}-${m[2]}-${m[3]}`;
+    const hh = m[4], mi = m[5], ss = m[6];
+    const timeMs = new Date(`${date}T${hh}:${mi}:${ss}`).getTime();
+    return { date, timeMs };
+  }
+  const d = parseDateFromFilename(s);
+  if (d) return { date: d, timeMs: new Date(`${d}T00:00:00`).getTime() };
+  return { date: null, timeMs: null };
+}
+
   function suggestConfidence(shotsTotal, hasChrono){
     const n = shotsTotal || 0;
     if (hasChrono && n >= 20) return "high";
@@ -1236,7 +1379,10 @@ function normKey(k){
 
   async function handleShotMarkerFiles(files, imp){
     imp.errors = imp.errors || [];
+    imp.notes = [];
+
     imp.status = "";
+    let sighterTargets = 0;
     const csvFiles = files.filter(f => /\.csv$/i.test(f.name));
     if (!csvFiles.length){
       imp.errors.push("ShotMarker: please use CSV exports for now.");
@@ -1307,17 +1453,23 @@ function normKey(k){
           const vertMOA = vertIn * moaPerIn;
           const mrMOA = mrIn * moaPerIn;
 
-          const t = {
+          
+          const isSighters = detectSightersFromShotMarkerBlock({ label: g.label || f.name, fileName: f.name, headers, rows: parsed.rows });
+const t = {
             id: `SM_${slugify(f.name)}_${gi+1}`,
             fileName: (groups.length>1 ? `${f.name} (T${gi+1})` : f.name),
             sourceFile: f.name,
             label: g.label || f.name,
+            timeMs: g.timeMs || null,
             shotsTotal: shots.length,
             shotsUsed: shots.length,
             vert: vertMOA,
             mr: mrMOA,
-            confidence: suggestConfidence(vertMOA, mrMOA, null, shots.length)
+            confidence: suggestConfidence(vertMOA, mrMOA, null, shots.length),
+            isSighters: isSighters
           };
+
+          if (t.isSighters) sighterTargets++;
 
           // Try date extraction from label (first token like "Sep 25 2025")
           const mDate = String(g.label||"").match(/([A-Z][a-z]{2})\s+(\d{1,2})\s+(\d{4})/);
@@ -1327,6 +1479,8 @@ function normKey(k){
             const mm = months[mon] || "01";
             t.date = `${yr}-${mm}-${day}`;
           }
+
+          if (!t.timeMs && t.date) t.timeMs = new Date(t.date + "T00:00:00").getTime();
 
           // nicer label fallback
           if (!t.label){
@@ -1340,6 +1494,8 @@ function normKey(k){
       }
     }
 
+    if (sighterTargets){ imp.notes.push(`Detected ${sighterTargets} sighter-only target${sighterTargets===1?"":"s"}.`); }
+
     // auto-pair by order if counts match (or if pairings empty)
     autoPair(imp);
     imp.status = imp.smTargets.length ? "ShotMarker targets parsed." : imp.status;
@@ -1348,11 +1504,15 @@ function normKey(k){
   
 async function handleChronoFiles(files, imp){
     imp.errors = imp.errors || [];
+    imp.notes = Array.isArray(imp.notes) ? imp.notes : [];
+
     imp.status = "";
     imp.chronoSets = Array.isArray(imp.chronoSets) ? imp.chronoSets : [];
-    imp.chronoSets.length = 0;
+
+    const beforeCount = imp.chronoSets.length;
 
     const allFiles = Array.from(files || []);
+    let sighterTargets = 0;
     const csvFiles = allFiles.filter(f => /\.csv$/i.test(f.name));
     const xlsFiles = allFiles.filter(f => /\.(xls|xlsx)$/i.test(f.name)); // xlsx reserved; we parse only .xls for now
 
@@ -1379,6 +1539,13 @@ async function handleChronoFiles(files, imp){
 
     const chronoFiles = csvFiles.concat(xlsFiles);
 
+    // Dedupe key: filename + shots + rounded stats
+    const existingKeys = new Set(imp.chronoSets.map(c => {
+      const a = Math.round((c.avg||0)*10)/10;
+      const s = Math.round((c.sd||0)*10)/10;
+      return `${String(c.fileName||"").toLowerCase()}|${c.shotsTotal||0}|${a}|${s}`;
+    }));
+
     for (const f of chronoFiles){
       try{
         const parsed = await parseChronoFile(f);
@@ -1391,20 +1558,43 @@ async function handleChronoFiles(files, imp){
         let vals = [];
         let usedCol = null;
 
-        const scoreVals = (arr) => {
+        const scoreVals = (arr, headerName) => {
           const a = arr.filter(x => x != null && isFinite(x));
           if (a.length < 8) return -1;
-          const inRange = a.filter(x => x > 1000 && x < 5000);
+
+          // Velocity should look like fps: mostly 1200–4200
+          const inRange = a.filter(x => x > 1200 && x < 4200);
           if (inRange.length < Math.max(8, a.length*0.6)) return -1;
 
-          const mean = inRange.reduce((p,c)=>p+c,0)/inRange.length;
-          const sd = Math.sqrt(inRange.reduce((p,c)=>p+Math.pow(c-mean,2),0)/inRange.length);
+          const m = inRange.reduce((p,c)=>p+c,0)/inRange.length;
+          const sd = sampleSD(inRange);
+          const minV = Math.min.apply(null, inRange);
+          const maxV = Math.max.apply(null, inRange);
+          const es = maxV - minV;
 
+          const hn = normKey(headerName || "");
           let s = 0;
-          if (mean > 1500 && mean < 3500) s += 2;
-          if (sd >= 1 && sd < 80) s += 2;
-          if (sd < 200) s += 1;
+
+          // Header hints (strongly prefer real velocity columns)
+          if (/(vel|velocity|fps|speed)/.test(hn)) s += 3;
+          if (/(time|ms|msec|sec|seconds)/.test(hn) && !/(vel|velocity|fps|speed)/.test(hn)) return -1;
+          if (/(shot|index|count|no)/.test(hn)) s -= 2;
+
+          // Mean plausibility
+          if (m >= 2200 && m <= 3300) s += 2;
+          else if (m >= 1500 && m <= 3800) s += 1;
+          else return -1;
+
+          // Spread plausibility
+          if (sd >= 2 && sd <= 45) s += 2;
+          else if (sd < 80) s += 1;
+          else return -1;
+
+          if (es >= 15 && es <= 250) s += 1;
+
+          // More shots is better
           s += Math.min(2, inRange.length/20);
+
           return s;
         };
 
@@ -1413,9 +1603,9 @@ async function handleChronoFiles(files, imp){
           const h = findCol(headers, [c]);
           if (!h) continue;
           const tmp = parsed.rows.map(r => toNum(r[h])).filter(x => x != null);
-          const sc = scoreVals(tmp);
+          const sc = scoreVals(tmp, h);
           if (sc >= 0){
-            vals = tmp.filter(x => x > 1000 && x < 5000);
+            vals = tmp.filter(x => x > 1200 && x < 4200);
             usedCol = h;
             break;
           }
@@ -1427,14 +1617,14 @@ async function handleChronoFiles(files, imp){
           let best = null;
           for (const h of headers){
             const tmp = parsed.rows.map(r => toNum(r[h])).filter(x => x != null);
-            const sc = scoreVals(tmp);
+            const sc = scoreVals(tmp, h);
             if (sc > bestSc){
               bestSc = sc;
               best = { h, tmp };
             }
           }
           if (best && bestSc >= 0){
-            vals = best.tmp.filter(x => x > 1000 && x < 5000);
+            vals = best.tmp.filter(x => x > 1200 && x < 4200);
             usedCol = best.h;
           }
         }
@@ -1444,41 +1634,120 @@ async function handleChronoFiles(files, imp){
           continue;
         }
 
-        const mean = vals.reduce((a,b)=>a+b,0)/vals.length;
-        const sd = Math.sqrt(vals.reduce((a,b)=>a+Math.pow(b-mean,2),0)/vals.length);
+        const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
+        const sd = Math.sqrt(vals.reduce((a,b)=>a+Math.pow(b-avg,2),0)/vals.length);
+        const minV = Math.min.apply(null, vals);
+        const maxV = Math.max.apply(null, vals);
+        const es = maxV - minV;
 
+        const k = `${String(f.name||"").toLowerCase()}|${vals.length}|${Math.round(avg*10)/10}|${Math.round(sd*10)/10}`;
+        if (existingKeys.has(k)) continue;
+        existingKeys.add(k);
+
+        const dt = parseDateTimeFromFilename(f.name);
         imp.chronoSets.push({
           id: "CH_" + Math.random().toString(16).slice(2),
           fileName: f.name,
           shotsTotal: vals.length,
-          avg: mean,
-          sd: sd
+          avg,
+          sd,
+          minV,
+          maxV,
+          es,
+          vels: vals,
+          date: dt.date || null,
+          timeMs: dt.timeMs || null,
+          velCol: usedCol || null
         });
 
       }catch(e){
         imp.errors.push(`Chrono "${f.name}": ${e.message || e}`);
       }
     }
+
+    // if new chronos came in, try timestamp pairing (then fallback pairing)
+    autoPair(imp);
   }
 
 
 
   function autoPair(imp){
+    let pairedTime = 0;
+    let pairedIndex = 0;
     if (!imp || !imp.smTargets) return;
     imp.pairings = imp.pairings || {};
-    // if equal counts and no pairings yet, pair by index
-    if (imp.smTargets.length && imp.chronoSets.length){
-      const need = imp.smTargets.filter(t => !imp.pairings[t.id]).length;
-      if (need){
-        const min = Math.min(imp.smTargets.length, imp.chronoSets.length);
-        for (let i=0;i<min;i++){
-          const t = imp.smTargets[i];
-          const c = imp.chronoSets[i];
-          if (!imp.pairings[t.id]) imp.pairings[t.id] = c.id;
+    if (!imp.smTargets.length || !imp.chronoSets?.length) return;
+
+    const chronos = imp.chronoSets.slice();
+    const targets = imp.smTargets.slice();
+
+    const alreadyUsed = new Set(Object.values(imp.pairings || {}).filter(Boolean));
+
+    const hasTimes = (arr) => arr.some(x => x && typeof x.timeMs === "number" && isFinite(x.timeMs));
+    const tHas = hasTimes(targets);
+    const cHas = hasTimes(chronos);
+
+    // 1) Timestamp pairing (closest chrono within 6 hours), prefer unused chrono files.
+    if (tHas && cHas){
+      const MAX_DIFF = 6 * 60 * 60 * 1000;
+      for (const t of targets){
+        if (imp.pairings[t.id]) continue;
+        if (t.timeMs == null) continue;
+
+        let best = null;
+        let bestDiff = Infinity;
+
+        for (const c of chronos){
+          if (alreadyUsed.has(c.id)) continue;
+          if (c.timeMs == null) continue;
+          const d = Math.abs(c.timeMs - t.timeMs);
+          if (d < bestDiff){
+            bestDiff = d;
+            best = c;
+          }
         }
+
+        if (best && bestDiff <= MAX_DIFF){
+          imp.pairings[t.id] = best.id;
+          alreadyUsed.add(best.id);
+        }
+          pairedTime++;
       }
     }
+
+    // 2) Fallback: if equal counts (or partial), pair by index for remaining unpaired.
+    const remaining = targets.filter(t => !imp.pairings[t.id]);
+    if (remaining.length){
+      const avail = chronos.filter(c => !alreadyUsed.has(c.id));
+      const min = Math.min(remaining.length, avail.length);
+      for (let i=0;i<min;i++){
+        imp.pairings[remaining[i].id] = avail[i].id;
+        alreadyUsed.add(avail[i].id);
+      }
+        pairedIndex += min;
+    }
   }
+
+  function chronoPreview(c){
+    if (!c) return "";
+    const v = Array.isArray(c.vels) ? c.vels : [];
+    if (!v.length) return "";
+    const take = v.slice(0, 8).map(x => String(Math.round(x))).join(", ");
+    return take + (v.length > 8 ? " …" : "");
+  }
+
+  function chronoSummaryLine(c){
+    if (!c) return "";
+    const avg = (c.avg||0).toFixed(0);
+    const sd = (c.sd||0).toFixed(1);
+    const es = (c.es||0).toFixed(0);
+    return `${c.shotsTotal||0} vels · Avg ${avg} · SD ${sd} · ES ${es}`;
+  
+
+    imp.notes = Array.isArray(imp.notes) ? imp.notes : [];
+    if (pairedTime) imp.notes.push(`Auto-paired ${pairedTime} target${pairedTime===1?"":"s"} by timestamp.`);
+    if (pairedIndex) imp.notes.push(`Auto-paired ${pairedIndex} target${pairedIndex===1?"":"s"} by order.`);
+}
 
   function renderImportListsAndPairings(imp){
     // lists
@@ -1496,7 +1765,8 @@ async function handleChronoFiles(files, imp){
       chList.innerHTML = imp.chronoSets.length ? imp.chronoSets.map(c => `
         <div class="fileItem">
           <div class="nm">${escapeHTML(c.fileName)}</div>
-          <div class="sm">${c.shotsTotal} vels · SD <b>${(c.sd||0).toFixed(1)}</b> fps · Avg ${(c.avg||0).toFixed(0)} fps</div>
+          <div class="sm">${chronoSummaryLine(c)} fps</div>
+          <div class="mini" style="color:var(--muted);margin-top:4px;">Preview: ${escapeHTML(chronoPreview(c))}</div>
         </div>
       `).join("") : `<div class="mini" style="color:var(--muted);">No chrono files loaded yet.</div>`;
     }
@@ -1523,7 +1793,7 @@ async function handleChronoFiles(files, imp){
             <div class="top">
               <div>
                 <div class="nm">Target ${idx+1}</div>
-                <div class="meta">${escapeHTML(t.fileName)}<br/>${t.shotsTotal} shots · Vert ${(t.vert||0).toFixed(2)} · MR ${(t.mr||0).toFixed(2)}</div>
+                <div class="meta">${escapeHTML(t.fileName)}<br/>${t.shotsTotal} shots · Dist ${(t.distanceYd||imp.distanceYd||"—")} yd · Vert ${(t.vert||0).toFixed(2)} · MR ${(t.mr||0).toFixed(2)}</div>
               </div>
               <div class="chip conf ${conf}">${CONF_LABEL[conf]}</div>
             </div>
@@ -1576,7 +1846,7 @@ async function handleChronoFiles(files, imp){
         barrelId,
         date,
         label,
-        isSighters: false,
+        isSighters: !!t.isSighters,
         shotsUsed: Math.min(20, t.shotsTotal || 0) || (t.shotsTotal || 0),
         shotsTotal: t.shotsTotal || 0,
         mr: t.mr || 0,
@@ -2150,6 +2420,7 @@ if (state.detailMode === "import"){
         distanceSource: null,
         smTargets: [],    // parsed targets from ShotMarker files
         chronoSets: [],   // parsed velocity sets
+        notes: [],       // import notes (collapsed)
         pairings: {},     // targetId -> chronoId
         errors: [],
         status: ""
@@ -2165,22 +2436,18 @@ if (state.detailMode === "import"){
 
       <div class="kpis" style="margin-bottom:12px;">
         <div class="kpi">
-          <div class="lbl">Distance</div>
+          <div class="lbl">Distance (yd)</div>
           <div class="val" style="font-size:16px;margin-top:6px;">
-            ${imp.distanceSource === "shotmarker"
-              ? `<div style="font-weight:900;">${imp.distanceYd} yd</div>`
-              : (imp.distanceSource === "inferred"
-                  ? `<div style="font-weight:900;">${imp.distanceYd} yd</div>`
-                  : `<input id="impDist" class="select" style="width:100%;" type="number" min="50" step="1" value="${imp.distanceYd ?? ""}" placeholder="e.g., 1000">`)
-            }
+            <input id="impDist" class="select" style="width:100%;max-width:160px" type="number" min="50" step="1" value="${imp.distanceYd ?? ""}" placeholder="e.g., 1000">
           </div>
-          <div class="mini" style="margin-top:6px;color:var(--muted);">
-            ${imp.distanceSource === "shotmarker"
-              ? `Distance: ${imp.distanceYd} yd (from ShotMarker)`
-              : (imp.distanceSource === "inferred"
-                  ? `Distance: ${imp.distanceYd} yd (inferred — verify)`
-                  : `Enter distance (yd) to convert inches → MOA.`)
-            }
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+            <button class="btn sm" data-setdist="100">100</button>
+            <button class="btn sm" data-setdist="600">600</button>
+            <button class="btn sm" data-setdist="1000">1000</button>
+            <button class="btn sm" data-setdist="1200">1200</button>
+          </div>
+          <div class="mini" style="margin-top:8px;color:var(--muted);">
+            Source: <b>${imp.distanceSource || "—"}</b> · Confidence: <b>${(imp.distanceSource==="shotmarker"||imp.distanceSource==="manual")?"high":(imp.distanceSource==="inferred"?"low":"—")}</b>
           </div>
         </div>
         <div class="kpi">
@@ -2192,6 +2459,13 @@ if (state.detailMode === "import"){
 
       ${(imp.errors && imp.errors.length) ? `<div class="warnBox"><b>Import notes</b><br/>${imp.errors.map(e => escapeHTML(e)).join("<br/>")}</div>` : ""}
 
+
+      ${(imp.notes && imp.notes.length) ? `
+        <details class="impNotes" style="margin-top:10px;">
+          <summary style="cursor:pointer;font-weight:800;">Import notes (details)</summary>
+          <div class="mini" style="margin-top:8px;color:var(--muted);line-height:1.5;">${imp.notes.map(n => "• " + escapeHTML(n)).join("<br/>")}</div>
+        </details>
+      ` : ""}
       <div class="impGrid">
         <div class="drop" id="dropSM">
           <div class="dropTop">
@@ -2229,6 +2503,7 @@ if (state.detailMode === "import"){
 
         <div class="impActions">
           <button class="btn sm" id="btnClearImport">Clear import</button>
+          <button class="btn sm" id="btnClearChronos">Clear chronos only</button>
           <button class="btn sm primary" id="btnGenerateSessions" ${(imp.smTargets.length ? "" : "disabled")}>Generate sessions</button>
         </div>
       </div>
@@ -2244,6 +2519,20 @@ if (state.detailMode === "import"){
       imp.smTargets = imp.smTargets.map(t => recomputeTargetMetrics(t, imp.distanceYd));
       renderDetail();
     });
+    // quick distance buttons (100/600/1000/1200)
+    body.querySelectorAll('button[data-setdist]').forEach(btn => {
+      btn.addEventListener("click", () => {
+        const v = parseFloat(btn.getAttribute("data-setdist")||"");
+        if (!isFinite(v)) return;
+        imp.distanceYd = v;
+        imp.distanceSource = "manual";
+        const distEl2 = $("impDist");
+        if (distEl2) distEl2.value = String(v);
+        imp.smTargets = imp.smTargets.map(t => recomputeTargetMetrics(t, imp.distanceYd));
+        renderDetail();
+      });
+    });
+
 
     $("btnBackToTimeline")?.addEventListener("click", closeAddSession);
     $("btnOpenManual")?.addEventListener("click", () => openAddSession(id));
@@ -2270,6 +2559,16 @@ if (state.detailMode === "import"){
       renderDetail();
     });
 
+    $("btnClearChronos")?.addEventListener("click", () => {
+      // Keep ShotMarker targets + distance; wipe chronos + any pairings.
+      imp.chronoSets = [];
+      imp.pairings = {};
+      imp.errors = imp.errors || [];
+      imp.status = "Chronos cleared.";
+      renderDetail();
+    });
+
+
     // render lists + pairings
     renderImportListsAndPairings(imp);
 
@@ -2295,8 +2594,11 @@ if (state.detailMode === "import"){
     chips.push(`<span class="chip conf ${s.confidence}">${CONF_LABEL[s.confidence] || s.confidence}</span>`);
 
     return `
-      <div class="sessionRow">
-        <div class="sessionTitle">${s.label}</div>
+      <div class="sessionRow" data-sid="${s.id}">
+        <div class="rowTop">
+          <div class="sessionTitle">${s.label}</div>
+          <button class="iconBtn" data-action="edit" data-sid="${s.id}" title="Edit session">✎</button>
+        </div>
         <div class="chips">${chips.join("")}</div>
         <div class="fileLine">${s.sourceFile || ""}</div>
       </div>
@@ -2310,6 +2612,15 @@ if (state.detailMode === "import"){
   `;
 
   body.innerHTML = sessionHtml;
+
+  // click-to-edit on session rows
+  body.querySelectorAll(".sessionRow[data-sid]").forEach(row=>{
+    row.addEventListener("click", (ev) => {
+      const btn = ev.target && ev.target.closest ? ev.target.closest("[data-action='edit']") : null;
+      const sid = (btn && btn.getAttribute("data-sid")) || row.getAttribute("data-sid");
+      if (sid) openSessionModal(sid);
+    });
+  });
 
   $("btnOpenImport")?.addEventListener("click", () => openImport(id));
   $("btnOpenManual")?.addEventListener("click", () => openAddSession(id));
@@ -2335,7 +2646,163 @@ if (state.detailMode === "import"){
     if (win) win.style.display = (state.detailMode === "import") ? "none" : "";
   }
 
-  function wire(){
+  
+  // ---- Session Edit Modal ----
+  let _editingSessionId = null;
+
+  function sessionById(id){
+    return state.sessions.find(s => s.id === id) || null;
+  }
+
+  function openSessionModal(sessionId){
+    const s = sessionById(sessionId);
+    if (!s) return;
+    _editingSessionId = sessionId;
+
+    const modal = $("sessModal");
+    const err = $("sessModalErr");
+    if (err){ err.style.display = "none"; err.textContent = ""; }
+
+    $("sessModalTitle").textContent = "Edit session";
+    $("sessModalSub").textContent = `${s.barrelId} · ${s.id}`;
+
+    $("eDate").value = (s.date || "").slice(0,10);
+    $("eConf").value = s.confidence || "mod";
+    $("eSighters").checked = !!s.isSighters;
+    $("eLabel").value = s.label || "";
+    $("eUsed").value = Number.isFinite(s.shotsUsed) ? s.shotsUsed : "";
+    $("eTotal").value = Number.isFinite(s.shotsTotal) ? s.shotsTotal : "";
+    $("eVert").value = Number.isFinite(s.vert) ? s.vert : "";
+    $("eMR").value = Number.isFinite(s.mr) ? s.mr : "";
+    $("eSD").value = Number.isFinite(s.sd) ? s.sd : "";
+    $("eFile").value = s.sourceFile || "";
+    $("eNotes").value = s.notes || "";
+
+    if (modal){
+      modal.style.display = "flex";
+      document.body.classList.add("modalOpen");
+      // focus label for quick edits
+      setTimeout(()=>{ try{$("eLabel")?.focus();}catch(e){} }, 0);
+    }
+  }
+
+  function closeSessionModal(){
+    const modal = $("sessModal");
+    if (modal) modal.style.display = "none";
+    document.body.classList.remove("modalOpen");
+    _editingSessionId = null;
+  }
+
+  function validateSessionDraft(d){
+    const problems = [];
+    if (!d.date) problems.push("Date is required.");
+    if (!d.label || !d.label.trim()) problems.push("Label is required.");
+    if (!Number.isFinite(d.shotsUsed) || d.shotsUsed < 0) problems.push("Shots used must be a valid number.");
+    if (!Number.isFinite(d.shotsTotal) || d.shotsTotal < 0) problems.push("Shots total must be a valid number.");
+    if (d.shotsUsed > d.shotsTotal) problems.push("Shots used cannot exceed shots total.");
+    if (!Number.isFinite(d.vert) || d.vert < 0) problems.push("Vert must be a valid number.");
+    if (!Number.isFinite(d.mr) || d.mr < 0) problems.push("MR must be a valid number.");
+    if (!Number.isFinite(d.sd) || d.sd < 0) problems.push("SD must be a valid number.");
+    if (!["low","mod","high"].includes(d.confidence)) problems.push("Confidence must be Low/Moderate/High.");
+    return problems;
+  }
+
+  function readSessionDraftFromModal(){
+    return {
+      date: ($("eDate")?.value || "").trim(),
+      confidence: ($("eConf")?.value || "mod"),
+      isSighters: !!$("eSighters")?.checked,
+      label: ($("eLabel")?.value || "").trim(),
+      shotsUsed: Number(($("eUsed")?.value || "").trim()),
+      shotsTotal: Number(($("eTotal")?.value || "").trim()),
+      vert: Number(($("eVert")?.value || "").trim()),
+      mr: Number(($("eMR")?.value || "").trim()),
+      sd: Number(($("eSD")?.value || "").trim()),
+      sourceFile: ($("eFile")?.value || "").trim(),
+      notes: ($("eNotes")?.value || "").trim()
+    };
+  }
+
+  function saveSessionFromModal(){
+    const sid = _editingSessionId;
+    const s = sessionById(sid);
+    if (!s) return;
+
+    const d = readSessionDraftFromModal();
+    const problems = validateSessionDraft(d);
+    const err = $("sessModalErr");
+    if (problems.length){
+      if (err){
+        err.style.display = "block";
+        err.textContent = problems.join(" ");
+      }
+      return;
+    }
+
+    s.date = d.date;
+    s.confidence = d.confidence;
+    s.isSighters = d.isSighters;
+    s.label = d.label;
+    s.shotsUsed = d.shotsUsed;
+    s.shotsTotal = d.shotsTotal;
+    s.vert = d.vert;
+    s.mr = d.mr;
+    s.sd = d.sd;
+    s.sourceFile = d.sourceFile;
+    s.notes = d.notes;
+
+    closeSessionModal();
+    render();
+  }
+
+  function deleteEditingSession(){
+    const sid = _editingSessionId;
+    if (!sid) return;
+    const s = sessionById(sid);
+    if (!s) return;
+    const ok = confirm(`Delete session ${s.id}? This cannot be undone.`);
+    if (!ok) return;
+    state.sessions = state.sessions.filter(x => x.id !== sid);
+    closeSessionModal();
+    render();
+  }
+
+  function duplicateEditingSession(){
+    const sid = _editingSessionId;
+    const s = sessionById(sid);
+    if (!s) return;
+    const nextId = "D" + Math.random().toString(36).slice(2,9).toUpperCase();
+    const copy = JSON.parse(JSON.stringify(s));
+    copy.id = nextId;
+    copy.label = (copy.label || "").trim() + " (copy)";
+    state.sessions.push(copy);
+    closeSessionModal();
+    render();
+  }
+
+  function wireSessionModal(){
+    $("btnSessClose")?.addEventListener("click", closeSessionModal);
+    $("btnSessCancel")?.addEventListener("click", closeSessionModal);
+    $("btnSessSave")?.addEventListener("click", saveSessionFromModal);
+    $("btnSessDelete")?.addEventListener("click", deleteEditingSession);
+    $("btnSessDuplicate")?.addEventListener("click", duplicateEditingSession);
+
+    // click outside card closes
+    $("sessModal")?.addEventListener("click", (e) => {
+      if (e.target && e.target.id === "sessModal") closeSessionModal();
+    });
+
+    // Esc closes
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape"){
+        const modal = $("sessModal");
+        if (modal && modal.style.display === "flex") closeSessionModal();
+      }
+    });
+  }
+
+function wire(){
+    wireSessionModal();
     $("selWindow").addEventListener("change", (e) => {
       state.windowRounds = parseInt(e.target.value, 10);
       render();
@@ -2475,5 +2942,94 @@ $("btnAddBarrel").addEventListener("click", () => {
   });
 })();
 </script>
+
+  <!-- Session Edit Modal -->
+  <div class="modalOverlay" id="sessModal">
+    <div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="sessModalTitle">
+      <div class="modalHead">
+        <div>
+          <h3 id="sessModalTitle">Edit session</h3>
+          <div class="small" id="sessModalSub" style="margin-top:6px;color:var(--muted);">—</div>
+        </div>
+        <button class="btn sm" id="btnSessClose">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="kpis" style="grid-template-columns:repeat(3,minmax(0,1fr));">
+          <div class="kpi">
+            <div class="lbl">Date</div>
+            <input id="eDate" type="date" class="select" style="width:100%;margin-top:6px;" />
+          </div>
+          <div class="kpi">
+            <div class="lbl">Confidence</div>
+            <select id="eConf" class="select" style="width:100%;margin-top:6px;">
+              <option value="low">Low</option>
+              <option value="mod">Moderate</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+          <div class="kpi">
+            <div class="lbl">Type</div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;">
+              <label class="toggle" style="padding:6px 10px;"><input id="eSighters" type="checkbox" /> Sighters session</label>
+            </div>
+            <div class="mini" style="margin-top:6px;color:var(--muted);">Unchecked = record shots.</div>
+          </div>
+        </div>
+
+        <div class="kpi" style="margin-top:12px;">
+          <div class="lbl">Label (shows in timeline)</div>
+          <input id="eLabel" class="select" style="width:100%;margin-top:6px;" placeholder="e.g., Oct 11 2025 — M2 R1 TT9-218 — #218 (T9-218)" />
+        </div>
+
+        <div class="kpis" style="margin-top:12px;">
+          <div class="kpi">
+            <div class="lbl">Shots used</div>
+            <input id="eUsed" type="number" min="0" step="1" class="select" style="width:100%;margin-top:6px;" />
+          </div>
+          <div class="kpi">
+            <div class="lbl">Shots total</div>
+            <input id="eTotal" type="number" min="0" step="1" class="select" style="width:100%;margin-top:6px;" />
+          </div>
+          <div class="kpi">
+            <div class="lbl">Source file</div>
+            <input id="eFile" class="select" style="width:100%;margin-top:6px;" placeholder="e.g., Rifle_Bullet_2025-10-11_08-19-43.xls" />
+          </div>
+        </div>
+
+        <div class="kpis" style="margin-top:12px;">
+          <div class="kpi">
+            <div class="lbl">Vert (MOA)</div>
+            <input id="eVert" type="number" step="0.01" class="select" style="width:100%;margin-top:6px;" />
+          </div>
+          <div class="kpi">
+            <div class="lbl">MR (MOA)</div>
+            <input id="eMR" type="number" step="0.01" class="select" style="width:100%;margin-top:6px;" />
+          </div>
+          <div class="kpi">
+            <div class="lbl">SD (fps)</div>
+            <input id="eSD" type="number" step="0.1" class="select" style="width:100%;margin-top:6px;" />
+          </div>
+        </div>
+
+        <div class="kpi" style="margin-top:12px;">
+          <div class="lbl">Notes</div>
+          <textarea id="eNotes" class="select" style="width:100%;margin-top:6px;height:90px;resize:vertical;" placeholder="Anything noteworthy…"></textarea>
+        </div>
+
+        <div class="pill warn" id="sessModalErr" style="display:none;margin-top:12px;"></div>
+      </div>
+      <div class="modalFoot">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn sm" id="btnSessDuplicate">Duplicate</button>
+          <button class="btn sm danger" id="btnSessDelete">Delete</button>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn sm" id="btnSessCancel">Cancel</button>
+          <button class="btn sm primary" id="btnSessSave">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
