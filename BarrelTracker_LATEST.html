@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>BarrelTracker — Import-First v4.5 (clean import UX)</title>
+<title>BarrelTracker — Import-First v4.9.20 (release)</title>
 <style>
   :root{
     --bg:#0b0f17;
@@ -161,6 +160,22 @@
     font-size:12px;
     color:var(--muted);
   }
+  .helpIcon{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:18px; height:18px;
+    margin-left:8px;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(2,6,23,.35);
+    color:#c7d2fe;
+    font-size:12px;
+    font-weight:900;
+    cursor:help;
+    user-select:none;
+  }
+  .helpIcon:hover{background:rgba(2,6,23,.55)}
 
   table{
     width:100%;
@@ -429,11 +444,12 @@
           <div class="logo" aria-label="BarrelTracker logo"></div>
           <div>
             <h1>BarrelTracker</h1>
-            <div class="subtitle">Import-first build (v4.5 locked) — clean ingestion UX.</div>
+            <div class="subtitle">Import-first build (v4.9.20 release) — local-only, deterministic ranking + offline chrono import.</div>
           </div>
         </div>
       </div>
       <div class="pillrow">
+        <div class="pill" id="pillVersion">v4.9.20</div>
         <div class="pill">Vertical-first</div>
         <div class="pill">Confidence-weighted</div>
         <div class="pill">Sighters count toward rounds</div>
@@ -444,7 +460,7 @@
     <div class="panel">
       <div class="panelHead">
         <div>
-          <h2>Barrel Ranking — Current Form</h2>
+          <h2>Barrel Ranking — Current Form <span class="helpIcon" title="Ranking score (0–100) uses fixed v1 weights: Score = clamp(100 − Vert×Wv − MR×Wmr − SD×Wsd, 0, 100) × ConfMult. Wv=60, Wmr=20, Wsd=1.2. ConfMult: High 1.00, Mod 0.90, Low 0.78. Lower Vert/MR/SD is better; confidence only scales the result.">?</span></h2>
           <div class="note">Last <span id="lblWindow">400</span> rounds · Min confidence: <span id="lblMinConf">Moderate</span> · <span id="lblSighters">Show sighters</span></div>
           <div class="hint"></div>
         </div>
@@ -541,7 +557,7 @@
 
     </div>
 
-    <div class="footerNote">BarrelTracker — Import-First v4.5 (locked). Local-only. No sample data.</div>
+    <div class="footerNote">BarrelTracker — Import-First v4.9.20 (release). Local-only. No sample data.</div>
   </div>
 
 <script>
@@ -564,6 +580,12 @@ importer: null
 
   const CONF_ORDER = { low: 1, mod: 2, high: 3 };
   const CONF_LABEL = { low: "Low", mod: "Moderate", high: "High" };
+
+  // Deterministic v1 ranking constants (locked)
+const RANK_W = Object.freeze({ vert: 60, mr: 20, sd: 1.2 });
+const CONF_MULT = Object.freeze({ high: 1.00, mod: 0.90, low: 0.78 });
+
+  
 
   const $ = (id) => document.getElementById(id);
 
@@ -1098,6 +1120,226 @@ function parseCSV(text){
     return { headers, rows };
   }
 
+// --- Minimal XLSX reader (offline) ---
+// Supports typical Garmin/chrono single-sheet exports.
+// Strategy:
+//  - XLSX is a ZIP. We read entries and inflate (deflate) using DecompressionStream when available.
+//  - Parse sharedStrings.xml (if present) and first worksheet XML.
+//  - Convert the sheet into a simple table -> {headers, rows}.
+//
+// If the browser doesn't support DecompressionStream('deflate-raw'), we fall back to a clear UX message
+// telling users to export CSV.
+async function parseXLSX(arrayBuffer){
+  const u8 = new Uint8Array(arrayBuffer);
+
+  // ---- ZIP helpers (central directory scan) ----
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+
+  function u32(o){ return dv.getUint32(o, true); }
+  function u16(o){ return dv.getUint16(o, true); }
+
+  function findEOCD(){
+    // EOCD signature 0x06054b50
+    // Search backwards from end, within 64KB
+    const maxBack = Math.min(u8.byteLength, 22 + 0xFFFF);
+    for (let i=u8.byteLength-22; i>=u8.byteLength-maxBack; i--){
+      if (i < 0) break;
+      if (u32(i) === 0x06054b50) return i;
+    }
+    return -1;
+  }
+
+  async function inflateRaw(comp){
+    // comp: Uint8Array
+    if (typeof DecompressionStream !== "function"){
+      throw new Error("XLSX: This browser can't inflate ZIP data offline. Export CSV instead.");
+    }
+    // ZIP uses raw deflate stream (no zlib header)
+    const ds = new DecompressionStream("deflate-raw");
+    const blob = new Blob([comp]);
+    const stream = blob.stream().pipeThrough(ds);
+    const ab = await new Response(stream).arrayBuffer();
+    return new Uint8Array(ab);
+  }
+
+  async function getZipEntries(){
+    const eocd = findEOCD();
+    if (eocd < 0) throw new Error("XLSX: Invalid ZIP (EOCD not found). Export CSV instead.");
+
+    const cdSize = u32(eocd + 12);
+    const cdOff  = u32(eocd + 16);
+    if (cdOff + cdSize > u8.byteLength) throw new Error("XLSX: Invalid ZIP directory. Export CSV instead.");
+
+    const entries = new Map();
+
+    let p = cdOff;
+    const end = cdOff + cdSize;
+    while (p + 46 <= end){
+      if (u32(p) !== 0x02014b50) break; // central file header
+      const compMethod = u16(p + 10);
+      const compSize   = u32(p + 20);
+      const uncompSize = u32(p + 24);
+      const nameLen    = u16(p + 28);
+      const extraLen   = u16(p + 30);
+      const cmtLen     = u16(p + 32);
+      const lho        = u32(p + 42);
+      const nameBytes  = u8.slice(p + 46, p + 46 + nameLen);
+      const name = new TextDecoder("utf-8").decode(nameBytes);
+
+      entries.set(name, { name, compMethod, compSize, uncompSize, lho });
+
+      p = p + 46 + nameLen + extraLen + cmtLen;
+    }
+    return entries;
+  }
+
+  async function readEntry(entries, name){
+    const e = entries.get(name);
+    if (!e) return null;
+
+    // local header
+    const p = e.lho;
+    if (p + 30 > u8.byteLength) throw new Error("XLSX: Corrupt local header. Export CSV instead.");
+    if (u32(p) !== 0x04034b50) throw new Error("XLSX: Corrupt local header sig. Export CSV instead.");
+    const nameLen  = u16(p + 26);
+    const extraLen = u16(p + 28);
+    const dataOff  = p + 30 + nameLen + extraLen;
+
+    const comp = u8.slice(dataOff, dataOff + e.compSize);
+
+    if (e.compMethod === 0){ // stored
+      return comp;
+    }
+    if (e.compMethod === 8){ // deflate
+      return await inflateRaw(comp);
+    }
+    throw new Error("XLSX: Unsupported ZIP compression method " + e.compMethod + ". Export CSV instead.");
+  }
+
+  const entries = await getZipEntries();
+
+  // Try to locate first worksheet (sheet1.xml preferred)
+  let sheetPath = "xl/worksheets/sheet1.xml";
+  if (!entries.has(sheetPath)){
+    // fallback: find first worksheet file
+    for (const k of entries.keys()){
+      if (/^xl\/worksheets\/sheet\d+\.xml$/i.test(k)){ sheetPath = k; break; }
+    }
+  }
+
+  const sharedPath = "xl/sharedStrings.xml";
+  const sheetU8 = await readEntry(entries, sheetPath);
+  if (!sheetU8) throw new Error("XLSX: Couldn't find worksheet XML. Export CSV instead.");
+
+  const sheetXML = new TextDecoder("utf-8").decode(sheetU8);
+
+  let shared = [];
+  const sharedU8 = entries.has(sharedPath) ? await readEntry(entries, sharedPath) : null;
+  if (sharedU8){
+    const sharedXML = new TextDecoder("utf-8").decode(sharedU8);
+    const doc = new DOMParser().parseFromString(sharedXML, "application/xml");
+    const sis = [...doc.getElementsByTagName("si")];
+    shared = sis.map(si => {
+      // strings may be split into multiple <t>
+      const ts = [...si.getElementsByTagName("t")].map(t => t.textContent || "");
+      return ts.join("");
+    });
+  }
+
+  const sdoc = new DOMParser().parseFromString(sheetXML, "application/xml");
+  const cells = [...sdoc.getElementsByTagName("c")];
+
+  function colToIndex(col){
+    // A -> 0, B -> 1, Z -> 25, AA -> 26...
+    let n = 0;
+    for (let i=0;i<col.length;i++){
+      n = n*26 + (col.charCodeAt(i) - 64);
+    }
+    return n - 1;
+  }
+
+  function parseRef(ref){
+    const m = String(ref||"").match(/^([A-Z]+)(\d+)$/i);
+    if (!m) return null;
+    return { c: colToIndex(m[1].toUpperCase()), r: parseInt(m[2],10)-1 };
+  }
+
+  const grid = new Map(); // "r,c" => string
+  let maxR = 0, maxC = 0;
+
+  for (const c of cells){
+    const ref = c.getAttribute("r");
+    const rc = parseRef(ref);
+    if (!rc) continue;
+    const t = c.getAttribute("t") || "";
+    let v = "";
+
+    if (t === "s"){
+      const vv = c.getElementsByTagName("v")[0]?.textContent;
+      const idx = parseInt(vv || "0", 10);
+      v = (idx >= 0 && idx < shared.length) ? shared[idx] : "";
+    }else if (t === "inlineStr"){
+      const ts = [...c.getElementsByTagName("t")].map(x => x.textContent || "");
+      v = ts.join("");
+    }else{
+      // numbers / general
+      v = c.getElementsByTagName("v")[0]?.textContent || "";
+    }
+
+    const key = rc.r + "," + rc.c;
+    grid.set(key, v);
+
+    if (rc.r > maxR) maxR = rc.r;
+    if (rc.c > maxC) maxC = rc.c;
+  }
+
+  // Build table
+  const table = [];
+  for (let r=0; r<=maxR; r++){
+    const row = [];
+    for (let c=0; c<=maxC; c++){
+      row.push(grid.get(r + "," + c) ?? "");
+    }
+    table.push(row);
+  }
+
+  // Trim empty trailing rows
+  while (table.length && table[table.length-1].every(v => String(v||"").trim()==="")) table.pop();
+  // Trim empty trailing cols
+  if (table.length){
+    let cols = table[0].length;
+    while (cols>0){
+      let empty=true;
+      for (let r=0; r<table.length; r++){
+        if (String(table[r][cols-1]||"").trim()!==""){ empty=false; break; }
+      }
+      if (!empty) break;
+      cols--;
+    }
+    table.forEach(r=> r.length=cols);
+  }
+
+  // Convert to {headers, rows} (mirror parseXLS)
+  const headerRow = table[0] || [];
+  const headers = headerRow.map((h,ci) => {
+    const s = String(h||"").trim();
+    return s.length ? s : ("COL_" + (ci+1));
+  });
+
+  const rows = [];
+  for (let i=1; i<table.length; i++){
+    const rr = table[i];
+    const obj = {};
+    for (let c=0; c<headers.length; c++){
+      obj[headers[c]] = (rr[c] ?? "");
+    }
+    const hasAny = Object.values(obj).some(v => String(v).trim().length);
+    if (hasAny) rows.push(obj);
+  }
+  return { headers, rows };
+}
+
+
 
   function decodeRK(rk){
     // RK: lowest 2 bits are flags.
@@ -1514,7 +1756,7 @@ async function handleChronoFiles(files, imp){
     const allFiles = Array.from(files || []);
     let sighterTargets = 0;
     const csvFiles = allFiles.filter(f => /\.csv$/i.test(f.name));
-    const xlsFiles = allFiles.filter(f => /\.(xls|xlsx)$/i.test(f.name)); // xlsx reserved; we parse only .xls for now
+    const xlsFiles = allFiles.filter(f => /\.(xls|xlsx)$/i.test(f.name)); // supports .xls and .xlsx (offline)
 
     if (!csvFiles.length && !xlsFiles.length){
       imp.errors.push("Chrono: please choose Garmin chronograph exports (.csv or .xls).");
@@ -1532,7 +1774,8 @@ async function handleChronoFiles(files, imp){
         return parseXLS(ab);
       }
       if (/\.xlsx$/i.test(f.name)){
-        throw new Error("XLSX not supported yet (use .xls or .csv).");
+        const ab = await f.arrayBuffer();
+        return await parseXLSX(ab);
       }
       throw new Error("Unsupported chrono type: " + f.name);
     }
@@ -1957,8 +2200,8 @@ function ensureBarrel(id){
     const confScore = Math.max(...win.map(s => CONF_ORDER[s.confidence] || 1));
     const conf = Object.keys(CONF_ORDER).find(k => CONF_ORDER[k] === confScore) || "low";
 
-    let score = 100 - (vert * 60) - (mr * 20) - (sd * 1.2);
-    const w = conf === "high" ? 1.0 : (conf === "mod" ? 0.90 : 0.78);
+    let score = 100 - (vert * RANK_W.vert) - (mr * RANK_W.mr) - (sd * RANK_W.sd);
+    const w = CONF_MULT[conf] ?? 0.78;
     score *= w;
     score = Math.max(0, Math.min(100, score));
 
@@ -2488,7 +2731,7 @@ if (state.detailMode === "import"){
               <div class="dropSub">Drop velocity <b>.csv</b> here. We’ll compute SD. (XLS/XLSX later.)</div>
             </div>
             <div>
-              <input id="impCHInput" type="file" accept=".csv,.xls,application/vnd.ms-excel,text/csv" multiple style="display:none">
+              <input id="impCHInput" type="file" accept=".csv,.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" multiple style="display:none">
               <button class="btn sm" id="btnPickCH">Choose files</button>
             </div>
           </div>
