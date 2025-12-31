@@ -1,10 +1,11 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>BarrelTracker — Import-First v4.9.20 (release)</title>
+<title>BarrelTracker — Import-First v4.2 (Phases 1–5)</title>
 <style>
   :root{
     --bg:#0b0f17;
@@ -484,6 +485,12 @@
   .sessionRow{cursor:pointer}
   .sessionRow:active{transform: translateY(0.5px)}
 
+
+/* "Last session" compact cell (no reflow) */
+th.lastCol, td.lastCol{ max-width:160px; width:160px; }
+td.lastCol .lsTop{ font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+td.lastCol .lsSub{ margin-top:2px; font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
 </style>
 </head>
 <body>
@@ -492,10 +499,10 @@
   <div class="suiteHeader__left">
     <div class="suiteHeader__topline">
       <div class="suiteHeader__title">BarrelTracker</div>
-      <div class="suiteHeader__pill" id="pillVersion">v4.9.20</div>
+      <div class="suiteHeader__pill" id="pillVersion">v4.2</div>
       <div class="suiteHeader__pill suiteHeader__pill--muted">standalone</div>
     </div>
-    <div class="suiteHeader__tagline">Import-first build (v4.9.20 release) — local-only, deterministic ranking + offline chrono import.</div>
+    <div class="suiteHeader__tagline">Import-first build (v4.2) — Phases 1–5: transparent scoring, guardrails, decay cues, match-day scope + quick guide.</div>
   </div>
   <div class="suiteHeader__right">
     <div class="suiteHeader__actions">
@@ -503,6 +510,8 @@
       <div class="suiteHeader__pill">Confidence-weighted</div>
       <div class="suiteHeader__pill">Sighters count toward rounds</div>
       <button id="btnClear" class="btn">Clear</button>
+      <button id="btnLockScope" class="btn">Lock scope</button>
+      <button id="btnGuide" class="btn">Guide</button>
     </div>
     <div class="suiteHeader__badge" title="BarrelTracker">
       <img class="suiteHeader__badgeImg" alt="" src="data:image/jpeg;base64,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"/>
@@ -579,7 +588,7 @@
               <th>SD (fps)</th>
               <th>Life</th>
               <th>Trend</th>
-              <th>Last</th>
+              <th class="lastCol">Last session</th>
             </tr>
           </thead>
           <tbody id="rankBody"></tbody>
@@ -613,6 +622,60 @@
     <div class="footerNote">BarrelTracker — Import-First v4.9.20 (release). Local-only. No sample data.</div>
   </div>
 
+
+  <!-- Score breakdown popover (Phase 1) -->
+  <div id="scorePop" class="pop" style="display:none; width:360px;">
+    <div class="popHead">Score breakdown</div>
+    <div class="popBody" id="scorePopBody"></div>
+    <div class="popActions">
+      <button class="btn sm" id="btnScorePopClose">Close</button>
+    </div>
+  </div>
+
+  <!-- Quick Guide modal (Phase 5) -->
+  <div class="modalOverlay" id="guideOverlay" aria-hidden="true">
+    <div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+      <div class="modalHead">
+        <div>
+          <h3 id="guideTitle">BarrelTracker Quick Guide</h3>
+          <div class="small" style="color:var(--muted);margin-top:6px;">How the ranking works (and how to avoid bad imports).</div>
+        </div>
+        <button class="iconBtn" id="btnGuideClose">✕</button>
+      </div>
+      <div class="modalBody">
+        <div class="tileGrid">
+          <div class="tile">
+            <div class="tTitle">Vertical-first philosophy</div>
+            <div class="tSub">Lower <b>Vertical MOA</b> drives the score the most. MR and SD matter, but they don’t outweigh a barrel that prints tall.</div>
+          </div>
+          <div class="tile">
+            <div class="tTitle">Deterministic scoring</div>
+            <div class="tSub">Score starts at 100 and subtracts penalties from Vertical, MR, and SD — then applies a confidence multiplier. Same inputs → same rank.</div>
+          </div>
+          <div class="tile">
+            <div class="tTitle">Confidence is “trust,” not “accuracy”</div>
+            <div class="tSub">Confidence reflects sample size + consistency + data quality. It scales the score; it doesn’t “create” performance.</div>
+          </div>
+          <div class="tile">
+            <div class="tTitle">Import guardrails</div>
+            <div class="tSub">If chrono strings are short, missing, or inconsistent, you’ll see warnings and confidence may be capped (explicitly shown).</div>
+          </div>
+          <div class="tile">
+            <div class="tTitle">Match-day scope</div>
+            <div class="tSub">Use the <b>Form window</b> selector (e.g., 200 / 400 rds) and optionally <b>Lock scope</b> to freeze rankings during a match.</div>
+          </div>
+        </div>
+        <div class="footerNote">Tip: click a Score to see the full breakdown. Click a row to open the barrel timeline.</div>
+      </div>
+      <div class="modalFoot">
+        <div class="mini">v4.2 • local-only</div>
+        <div>
+          <button class="btn" id="btnGuideOk">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <script>
 (() => {
   const state = {
@@ -624,6 +687,11 @@
     windowRounds: 400,
     minConf: "mod",
     showSighters: true,
+
+    // Phase 4: match-day scope lock
+    rankLocked: false,
+    lockedWindowRounds: null,
+    lockedAtISO: null,
 
     // detail drawer mode
     detailMode: "timeline", // "timeline" | "import" | "manual"
@@ -647,6 +715,15 @@ const CONF_MULT = Object.freeze({ high: 1.00, mod: 0.90, low: 0.78 });
     return d.toLocaleDateString(undefined, { month:"short", day:"2-digit" });
   }
 
+  function renderLastSessionCell(agg){
+    if (!agg) return "—";
+    const top = String(agg.lastLabel || "—");
+    const sub = agg.last ? fmtDateShort(agg.last) : "";
+    const title = escapeHTML(top + (sub ? ("\n" + sub) : ""));
+    return `<div class="lsTop" title="${title}">${escapeHTML(top)}</div>` + (sub ? `<div class="lsSub">${escapeHTML(sub)}</div>` : "");
+  }
+
+
   function escapeHTML(str){
     return String(str ?? "").replace(/[&<>"']/g, (ch) => (
       ch === "&" ? "&amp;" :
@@ -655,6 +732,47 @@ const CONF_MULT = Object.freeze({ high: 1.00, mod: 0.90, low: 0.78 });
       ch === '"' ? "&quot;" : "&#39;"
     ));
   }
+
+  function summarizeImportErrors(errs, maxLines){
+    const max = maxLines ?? 6;
+    const buckets = new Map();
+    for (const raw of (errs || [])){
+      const s = String(raw || "");
+      // normalize noisy counters so we can group similar messages
+      const key = s
+        .replace(/block\s+\d+/gi, "block #")
+        .replace(/\bT\d+\b/g, "T#")
+        .replace(/\bR\d+\b/g, "R#");
+      buckets.set(key, (buckets.get(key) || 0) + 1);
+    }
+    const arr = Array.from(buckets.entries()).map(([msg, count]) => ({ msg, count }));
+    arr.sort((a,b) => b.count - a.count);
+    const lines = arr.slice(0, max).map(o => (o.count > 1 ? `(${o.count}×) ${o.msg}` : o.msg));
+    return { lines, more: Math.max(0, arr.length - max), groups: arr.length, total: (errs || []).length };
+  }
+
+  function renderImportErrorBox(errs){
+    const sum = summarizeImportErrors(errs, 6);
+    let html = `<div class="warnBox"><b>Import notes</b><br/>${sum.lines.map(e => escapeHTML(e)).join("<br/>")}`;
+    if (sum.more > 0){
+      html += `<br/><span class="muted">…and ${sum.more} more types (${sum.total} entries)</span>`;
+    }
+    html += `</div>`;
+    return html;
+  }
+
+
+  function renderImportNotes(notes){
+    const arr = (notes || []);
+    const max = 30;
+    const shown = arr.slice(0, max);
+    const lines = shown.map(n => "• " + escapeHTML(n)).join("<br/>");
+    const more = arr.length - shown.length;
+    return lines + (more > 0 ? `<br/><span class="muted">…and ${more} more</span>` : "");
+  }
+
+
+
 
 
   function slugify(s){
@@ -810,10 +928,140 @@ function parseCSV(text){
 
   // ShotMarker "shotslog" exports can contain multiple target blocks (sessions/strings).
   // We split them into per-target groups so they can pair 1:1 with chrono files.
-  function parseShotMarkerMulti(text, filename){
+  
+  // --- Robust Target/Relay detector for ShotMarker exports (R1/R2/R3 etc) ---
+    // --- Robust Target/Relay detector for ShotMarker exports (prefers ~equal-size groups like 22-shot strings) ---
+  function guessTargetColumn(headers, rows){
+    headers = headers || [];
+    rows = rows || [];
+    if (!headers.length || !rows.length) return null;
+
+    const norm = (x)=>String(x||"").trim().toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+    const hnorm = headers.map(h=>norm(h));
+
+    // Helper: median of numeric array
+    const median = (arr)=>{
+      if (!arr || !arr.length) return 0;
+      const a = arr.slice().sort((x,y)=>x-y);
+      const mid = Math.floor(a.length/2);
+      return (a.length % 2) ? a[mid] : (a[mid-1]+a[mid])/2;
+    };
+
+    // Give a name-based bonus, but DO NOT early-return; we still validate by group-size behavior.
+    const nameBonus = (hn)=>{
+      let b=0;
+      if (!hn) return 0;
+      if (hn.includes("relay")) b += 18;
+      if (hn.includes("string")) b += 16;
+      if (hn.includes("series")) b += 10;
+      if (hn.includes("target")) b += 12;
+      if (hn.includes("bull")) b += 10;
+      if (hn.includes("stage")) b += 8;
+      if (hn.includes("match")) b += 4;
+      if (hn.includes("round")) b += 4;
+      return b;
+    };
+
+    // Value patterns we like
+    const rxR  = /^R\s*\d+$/i;                  // R1, R2...
+    const rxT  = /^T\s*\d+$/i;                  // T1...
+    const rxTT = /^TT\s*\d+(?:[-_ ]\d+)?$/i;    // TT9-218 etc
+    const rxNum= /^\d+$/;
+
+    // Avoid obvious non-group columns
+    const badName = (hn)=> (
+      hn === "x" || hn === "y" || hn.includes("x mm") || hn.includes("y mm") ||
+      hn.includes("time") || hn.includes("timestamp") || hn.includes("date") ||
+      hn.includes("wind") || hn.includes("temp") || hn.includes("pressure") ||
+      hn.includes("elev") || hn.includes("alt") || hn.includes("latitude") || hn.includes("longitude") ||
+      hn.includes("shot") && (hn.includes("x") || hn.includes("y") || hn.includes("radius"))
+    );
+
+    // Score a column by: (a) pattern strength of uniques, (b) group-size distribution (prefers ~equal groups like 22 shots),
+    // (c) sane number of groups (not 66 unique IDs), (d) optional name hints.
+    const scoreColumn = (colName, hn)=>{
+      const sample = rows.slice(0, Math.min(rows.length, 800));
+      const vals = [];
+      for (const r of sample){
+        const v = String((r && r[colName]) ?? "").trim();
+        if (v) vals.push(v);
+      }
+      if (vals.length < 10) return -1;
+
+      const uniq = Array.from(new Set(vals));
+      const uN = uniq.length;
+      if (uN < 2 || uN > 80) return -1;
+
+      // Group sizes on full rows (not just sample)
+      const counts = new Map();
+      for (const r of rows){
+        const v = String((r && r[colName]) ?? "").trim();
+        if (!v) continue;
+        counts.set(v, (counts.get(v) || 0) + 1);
+      }
+      const sizes = Array.from(counts.values());
+      if (sizes.length < 2) return -1;
+
+      const med = median(sizes);
+      const mean = rows.length / Math.max(1, sizes.length);
+
+      // Pattern score on unique values
+      let hitsStrong = 0, hitsWeak = 0;
+      for (const u of uniq){
+        if (rxR.test(u)) hitsStrong += 4;
+        else if (rxT.test(u) || rxTT.test(u)) hitsStrong += 3;
+        else if (rxNum.test(u)) hitsWeak += 1;
+      }
+      const fracStrong = hitsStrong / Math.max(1, uniq.length*3); // normalize-ish
+
+      // Penalize "ID-like" columns where most groups are tiny (e.g., shot index)
+      let score = 0;
+      score += nameBonus(hn);
+
+      // Prefer fewer groups and larger median group size.
+      score += Math.min(med, 50) * 2.2;     // median group size is king
+      score += Math.min(mean, 50) * 0.8;
+      score -= uN * 1.1;                    // too many unique groups is bad
+
+      // Reward strong patterns (R1/R2 ideal)
+      score += fracStrong * 40;
+
+      // Hard penalties for nonsense splits
+      if (med < 8) score -= 35;
+      if (uN > rows.length / 3) score -= 45;        // e.g., ~1-3 shots per group
+      if (uN > 30 && med < 12) score -= 25;
+
+      // Extra bonus if it looks like Relay (R#) specifically
+      const relayFrac = uniq.filter(u=>rxR.test(u)).length / Math.max(1, uniq.length);
+      if (relayFrac > 0.6) score += 22;
+
+      return score;
+    };
+
+    let bestCol = null;
+    let bestScore = -1;
+
+    for (let i=0;i<headers.length;i++){
+      const col = headers[i];
+      const hn = hnorm[i];
+      if (!col) continue;
+      if (badName(hn)) continue;
+      const sc = scoreColumn(col, hn);
+      if (sc > bestScore){
+        bestScore = sc;
+        bestCol = col;
+      }
+    }
+
+    // Require a minimum confidence to avoid accidental splits
+    if (bestScore >= 22) return bestCol;
+    return null;
+  }
+
+function parseShotMarkerMulti(text, filename){
     const raw = String(text || "").replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n");
 
-    const isSessionLine = (line) => /^[A-Z][a-z]{2}\s+\d{1,2}\s+\d{4},/.test(String(line||"").trim());
+    const isSessionLine = (line) => /^[A-Z][a-z]{2}\s+\d{1,2}\s+\d{4},/.test(String(line||"").trim()) || /^\d{1,2}\/\d{1,2}\/\d{4},/.test(String(line||"").trim());
 
     // Reuse the same CSV splitting logic as parseCSV
     const splitLine = (line) => {
@@ -901,23 +1149,103 @@ function parseCSV(text){
     }
     if (cur) blocks.push(cur);
 
-    // Fallback: if we didn't detect blocks, treat as single CSV.
-    if (!blocks.length){
-      const parsed = parseCSV(text);
-      return [{
-        sourceFile: filename,
-        label: filename?.replace(/\.[^.]+$/,"") || "ShotMarker",
-        headers: parsed.headers || [],
-        rows: parsed.rows || [],
-      }];
+    
+    
+    // If we detected one or more session blocks, ShotMarker can still contain multiple targets within a block.
+    // In that case, split rows by Target-like column so targets can pair 1:1 with chrono files.
+    if (blocks.length){
+      const expanded = [];
+      for (const b of blocks){
+        // ShotMarker Archive format: each session block IS a target/string already (e.g., 12/27/2025,R3,...)
+        // Do NOT split these blocks again by Target-like columns.
+        const isArchive = /^\d{1,2}\/\d{1,2}\/\d{4},/.test(String(b.sessionLine||"").trim()) && String(b.headerLine||"").trim().startsWith(",time");
+        if (isArchive){
+          const sCols = splitLine(b.sessionLine || "");
+          const lab = (sCols[1] || "").trim() || "Session";
+          expanded.push(Object.assign({}, b, { targetLabel: lab }));
+          continue;
+        }
+
+        const headers = b.headers || [];
+        const rows = b.rows || [];
+        const tKey = guessTargetColumn(headers, rows);
+        if (!tKey || !rows.length){ expanded.push(b); continue; }
+
+        const order = [];
+        const map = new Map();
+        for (const r of rows){
+          const tv = String((r && r[tKey]) ?? "").trim();
+          // If target field is empty, treat it as part of the first bucket
+          const key = tv || "__UNSPEC__";
+          if (!map.has(key)){ map.set(key, []); order.push(key); }
+          map.get(key).push(r);
+        }
+
+        // If we only have one real bucket, keep original block
+        const real = order.filter(k => k !== "__UNSPEC__");
+        if (real.length <= 1){
+          expanded.push(b);
+          continue;
+        }
+
+        for (const key of order){
+          if (key === "__UNSPEC__") continue;
+          expanded.push({
+            sessionLine: b.sessionLine,
+            headerLine: b.headerLine,
+            headers: b.headers,
+            rows: map.get(key) || [],
+            targetLabel: key
+          });
+        }
+      }
+      // replace blocks contents
+      blocks.length = 0;
+      for (const b of expanded) blocks.push(b);
     }
 
-    return blocks
+// Fallback: if we didn't detect session blocks, treat as CSV.
+    // If a Target column exists, split into N targets so pairing can be 1:1 with chrono files.
+    if (!blocks.length){
+      const parsed = parseCSV(text);
+      const nice = filename?.replace(/\.[^.]+$/,"") || "ShotMarker";
+      const headers = parsed.headers || [];
+      const rows = parsed.rows || [];
+
+      const tKey = guessTargetColumn(headers, rows);
+      if (tKey){
+        const order = [];
+        const map = new Map();
+        for (const r of rows){
+          const tv = String((r && r[tKey]) ?? "").trim();
+          if (!tv) continue;
+          if (!map.has(tv)){ map.set(tv, []); order.push(tv); }
+          map.get(tv).push(r);
+        }
+        if (order.length){
+          return order.map(tv => ({
+            sourceFile: filename,
+            label: `${nice} — Target ${tv}`,
+            headers,
+            rows: map.get(tv) || [],
+            targetLabel: tv
+          }));
+        }
+      }
+
+      return [{
+        sourceFile: filename,
+        label: nice,
+        headers,
+        rows,
+      }];
+    }
+return blocks
   .filter(b => (b.rows || []).length)
   .map((b, idx) => {
     const nice = filename?.replace(/\.[^.]+$/,"") || "ShotMarker";
     const base = b.sessionLine || nice;
-    const label = `${base} — ${nice}`;
+    const label = b.targetLabel ? `${base} — Target ${b.targetLabel} — ${nice}` : `${base} — ${nice}`;
 
     // Extract local timestamp from the session line when present:
     // Example: "Oct 11 2025, 08:19:43"
@@ -1649,9 +1977,18 @@ function parseDateTimeFromFilename(name){
   return { date: null, timeMs: null };
 }
 
-  function suggestConfidence(shotsTotal, hasChrono){
+  function suggestConfidence(shotsTotal, hasChrono, chronoShots){
     const n = shotsTotal || 0;
-    if (hasChrono && n >= 20) return "high";
+    const c = chronoShots || 0;
+    // Confidence is "trust": sample size + chrono quality
+    if (hasChrono){
+      if (c > 0 && c < 15) return "low";
+      if (n >= 20) return "high";
+      if (n >= 15) return "mod";
+      return "low";
+    }
+    // No chrono → never "high"
+    if (n >= 20) return "mod";
     if (n >= 15) return "mod";
     return "low";
   }
@@ -2082,7 +2419,8 @@ async function handleChronoFiles(files, imp){
       const sel = imp.pairings[t.id] || "";
       const paired = imp.chronoSets.find(c => c.id === sel);
       const hasChrono = !!paired;
-      const conf = suggestConfidence(t.shotsTotal, hasChrono);
+      const conf = suggestConfidence(t.shotsTotal, hasChrono, paired ? paired.shotsTotal : 0);
+      const capped = (hasChrono && paired && paired.shotsTotal && paired.shotsTotal < 15) || (!hasChrono);
       return `
         <div class="pairRow" data-tid="${t.id}">
           <div class="pairCard">
@@ -2091,7 +2429,10 @@ async function handleChronoFiles(files, imp){
                 <div class="nm">Target ${idx+1}</div>
                 <div class="meta">${escapeHTML(t.fileName)}<br/>${t.shotsTotal} shots · Dist ${(t.distanceYd||imp.distanceYd||"—")} yd · Vert ${(t.vert||0).toFixed(2)} · MR ${(t.mr||0).toFixed(2)}</div>
               </div>
-              <div class="chip conf ${conf}">${CONF_LABEL[conf]}</div>
+              <div style="display:flex;gap:8px;align-items:center;justify-content:flex-end;">
+                <div class="chip conf ${conf}">${CONF_LABEL[conf]}</div>
+                ${capped ? `<div class="chip impact bad" title="Confidence capped due to data quality.">${!hasChrono?"⚠️ No chrono":"⚠️ Short chrono"}</div>` : ``}
+              </div>
             </div>
           </div>
           <div class="pairCard">
@@ -2133,7 +2474,17 @@ async function handleChronoFiles(files, imp){
       const chronoId = imp.pairings[t.id] || "";
       const chrono = chronoId ? imp.chronoSets.find(c => c.id === chronoId) : null;
 
-      const conf = suggestConfidence(t.shotsTotal, !!chrono);
+      const conf = suggestConfidence(t.shotsTotal, !!chrono, chrono ? chrono.shotsTotal : 0);
+      if (chrono && chrono.shotsTotal && chrono.shotsTotal < 15){
+        imp.errors = Array.isArray(imp.errors) ? imp.errors : [];
+        const msg = `Chrono warning: "${chrono.fileName}" has only ${chrono.shotsTotal} shots (confidence capped).`;
+        if (!imp.errors.includes(msg)) imp.errors.push(msg);
+      }
+      if (!chrono){
+        imp.errors = Array.isArray(imp.errors) ? imp.errors : [];
+        const msg2 = `Pairing note: target "${(t.name||t.label||t.id)}" has no chrono paired (confidence capped).`;
+        if (!imp.errors.includes(msg2)) imp.errors.push(msg2);
+      }
       const date = t.date || chrono?.date || new Date().toISOString().slice(0,10);
       const label = `${new Date(date+"T00:00:00").toLocaleDateString(undefined,{month:"short",day:"2-digit",year:"numeric"})} — ${(t.fileName || t.sourceFile || "ShotMarker").replace(/\.[^.]+$/,"")}`;
 
@@ -2268,11 +2619,77 @@ function ensureBarrel(id){
     })();
 
     const last = win[0]?.date || null;
-    return { vert, mr, sd, conf, score, trend, last };
+    const lastLabel = (win[0]?.label || win[0]?.sourceFile || "").replace(/\.[^.]+$/,"") || "";
+    return { vert, mr, sd, conf, score, trend, last, lastLabel };
   }
 
   function passesMinConf(conf){
     return (CONF_ORDER[conf] || 1) >= (CONF_ORDER[state.minConf] || 2);
+  }
+
+
+  // Phase 1: explainable scoring (no logic changes)
+  function scoreBreakdown(barrelId){
+    const win = formWindowSessions(barrelId);
+    if (!win.length) return null;
+
+    const avg = (k) => win.reduce((a,s)=>a + (s[k] ?? 0), 0) / win.length;
+    const vert = avg("vert");
+    const mr = avg("mr");
+    const sd = avg("sd");
+
+    const confScore = Math.max(...win.map(s => CONF_ORDER[s.confidence] || 1));
+    const conf = Object.keys(CONF_ORDER).find(k => CONF_ORDER[k] === confScore) || "low";
+
+    const vertPenalty = vert * RANK_W.vert;
+    const mrPenalty   = mr   * RANK_W.mr;
+    const sdPenalty   = sd   * RANK_W.sd;
+    const baseScore   = 100 - vertPenalty - mrPenalty - sdPenalty;
+
+    const mult = CONF_MULT[conf] ?? 0.78;
+    const finalScore = Math.max(0, Math.min(100, baseScore * mult));
+
+    // “Shares” are explanatory only (weights, not perfect attribution)
+    const totalPenalty = Math.max(0.0001, vertPenalty + mrPenalty + sdPenalty);
+    const pVert = (vertPenalty / totalPenalty) * 100;
+    const pMr   = (mrPenalty   / totalPenalty) * 100;
+    const pSd   = (sdPenalty   / totalPenalty) * 100;
+
+    const confLabel = CONF_LABEL[conf] || conf;
+
+    const html = `
+      <div class="popRow">
+        <div class="popLbl">Final</div>
+        <div style="font-weight:900;font-size:16px;">${finalScore.toFixed(1)} <span style="color:var(--muted);font-weight:700;font-size:12px;">(window avg)</span></div>
+      </div>
+      <div style="margin:8px 0 10px; height:1px; background: rgba(255,255,255,.08);"></div>
+
+      <div class="popRow">
+        <div class="popLbl">Vertical</div>
+        <div><b>${vert.toFixed(2)}</b> MOA · penalty <b>${vertPenalty.toFixed(1)}</b> · ~${pVert.toFixed(0)}%</div>
+      </div>
+      <div class="popRow">
+        <div class="popLbl">MR</div>
+        <div><b>${mr.toFixed(2)}</b> · penalty <b>${mrPenalty.toFixed(1)}</b> · ~${pMr.toFixed(0)}%</div>
+      </div>
+      <div class="popRow">
+        <div class="popLbl">SD</div>
+        <div><b>${sd.toFixed(1)}</b> fps · penalty <b>${sdPenalty.toFixed(1)}</b> · ~${pSd.toFixed(0)}%</div>
+      </div>
+
+      <div style="margin:10px 0; padding:10px 10px; border-radius:14px; border:1px solid rgba(255,255,255,.10); background: rgba(2,6,23,.35);">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
+          <div style="font-weight:900;">Confidence</div>
+          <div class="conf ${conf}" style="font-weight:900;">${confLabel}</div>
+        </div>
+        <div class="mini" style="margin-top:6px;">
+          Base score <b>${baseScore.toFixed(1)}</b> × multiplier <b>${mult.toFixed(2)}</b> = <b>${finalScore.toFixed(1)}</b>
+        </div>
+      </div>
+
+      <div class="mini">Deterministic: 100 − (Vert·${RANK_W.vert} + MR·${RANK_W.mr} + SD·${RANK_W.sd}) then × confidence multiplier.</div>
+    `;
+    return { vert, mr, sd, conf, baseScore, finalScore, html };
   }
 
   function trendSparkSVG(dir){
@@ -2300,6 +2717,45 @@ function ensureBarrel(id){
     if (conf === "low") return "glow-low";
     return "";
   }
+
+
+  // Phase 3: confidence decay cue (visual only)
+  function glowBoxShadow(conf, lastISO){
+    if (!conf) return "";
+    const base = {
+      high: { r:34, g:197, b:94,  a:0.28, glow:0.08 },
+      mod:  { r:245,g:158, b:11,  a:0.26, glow:0.08 },
+      low:  { r:100,g:116, b:139, a:0.22, glow:0.06 },
+    }[conf] || { r:100,g:116,b:139,a:0.18,glow:0.05 };
+
+    // decay from 1.0 (fresh) to 0.35 (stale) over ~45 days
+    let decay = 1.0;
+    if (lastISO){
+      const days = (Date.now() - new Date(lastISO + "T00:00:00").getTime()) / (1000*60*60*24);
+      decay = Math.max(0.35, Math.min(1.0, 1.0 - (days/45)));
+    }
+    const a1 = (base.a * decay).toFixed(3);
+    const a2 = (0.10 * decay).toFixed(3);
+    const a3 = (base.glow * decay).toFixed(3);
+    return `inset 0 0 0 1px rgba(${base.r},${base.g},${base.b},${a1}), 0 0 0 1px rgba(${base.r},${base.g},${base.b},${a2}), 0 0 22px rgba(${base.r},${base.g},${base.b},${a3})`;
+  }
+
+
+  // Phase 1: session impact label (simple, deterministic)
+  function impactLabel(session, agg){
+    if (!session || !agg) return { key:"neutral", text:"Neutral" };
+    const dv = session.vert - agg.vert;
+    const ds = session.sd - agg.sd;
+
+    // Small deadband to avoid noise
+    const helped = (dv <= -0.05 && ds <= 0.0);
+    const hurt   = (dv >=  0.05 && ds >= 0.5);
+
+    if (helped) return { key:"good", text:"Helped barrel" };
+    if (hurt)   return { key:"bad",  text:"Hurt confidence" };
+    return { key:"neutral", text:"Neutral" };
+  }
+
 
   function renderRanking(){
     const body = $("rankBody");
@@ -2339,15 +2795,27 @@ function ensureBarrel(id){
           <td class="muted">—</td>
           <td class="muted">—</td>
         `;
-      } else {
+      
+        // Allow selecting barrels even when they have no sessions yet
+        tr.addEventListener("click", () => {
+          state.selectedBarrelId = r.barrel.id;
+          state.detailMode = "timeline";
+          state.draft = null;
+          renderDetail();
+          [...body.querySelectorAll("tr")].forEach(x => x.style.outline = "");
+          tr.style.outline = "2px solid rgba(99,102,241,.35)";
+          tr.style.outlineOffset = "-2px";
+        });
+} else {
         rank += 1;
         const trendClass = agg.trend === "up" ? "trend up" : (agg.trend === "down" ? "trend down" : "trend flat");
         const arrow = agg.trend === "up" ? "▲" : (agg.trend === "down" ? "▼" : "▬");
         tr.className = rowGlowClass(agg.conf);
+        tr.style.boxShadow = glowBoxShadow(agg.conf, agg.last);
         tr.innerHTML = `
           <td class="ranknum">${rank}</td>
           <td class="barrel">${r.barrel.display}</td>
-          <td class="score">${agg.score.toFixed(1)}</td>
+          <td class="score"><span class="scoreCell" data-barrel="${r.barrel.id}">${agg.score.toFixed(1)}</span></td>
           <td class="conf ${agg.conf}">${CONF_LABEL[agg.conf] || agg.conf}</td>
           <td><strong>${agg.vert.toFixed(2)}</strong></td>
           <td>${agg.mr.toFixed(2)}</td>
@@ -2359,7 +2827,7 @@ function ensureBarrel(id){
               ${trendSparkSVG(agg.trend)}
             </span>
           </td>
-          <td>${agg.last ? fmtDateShort(agg.last) : "—"}</td>
+          <td class="lastCol">${renderLastSessionCell(agg)}</td>
         `;
 
         tr.addEventListener("click", () => {
@@ -2753,13 +3221,13 @@ if (state.detailMode === "import"){
         </div>
       </div>
 
-      ${(imp.errors && imp.errors.length) ? `<div class="warnBox"><b>Import notes</b><br/>${imp.errors.map(e => escapeHTML(e)).join("<br/>")}</div>` : ""}
+      ${(imp.errors && imp.errors.length) ? renderImportErrorBox(imp.errors) : ""}
 
 
       ${(imp.notes && imp.notes.length) ? `
         <details class="impNotes" style="margin-top:10px;">
           <summary style="cursor:pointer;font-weight:800;">Import notes (details)</summary>
-          <div class="mini" style="margin-top:6px;color:var(--muted);line-height:1.5;">${imp.notes.map(n => "• " + escapeHTML(n)).join("<br/>")}</div>
+          <div class="mini" style="margin-top:6px;color:var(--muted);line-height:1.5;">${renderImportNotes(imp.notes)}</div>
         </details>
       ` : ""}
       <div class="impGrid">
@@ -2888,6 +3356,8 @@ if (state.detailMode === "import"){
     chips.push(`<span class="chip">MR ${s.mr.toFixed(2)} MOA</span>`);
     chips.push(`<span class="chip">SD ${s.sd.toFixed(1)} fps</span>`);
     chips.push(`<span class="chip conf ${s.confidence}">${CONF_LABEL[s.confidence] || s.confidence}</span>`);
+    const imp = impactLabel(s, agg);
+    chips.push(`<span class="chip impact ${imp.key}">${imp.key==="good"?"🟢":imp.key==="bad"?"🔴":"⚪"} ${imp.text}</span>`);
 
     return `
       <div class="sessionRow" data-sid="${s.id}">
@@ -2929,6 +3399,19 @@ if (state.detailMode === "import"){
     $("lblSighters").textContent = state.showSighters ? "Show sighters" : "Hide sighters";
     const sw = $("selWindow");
     if (sw) sw.style.display = (state.detailMode === "import") ? "none" : "";
+
+    // Phase 4: scope lock UI
+    const btnLock = $("btnLockScope");
+    if (btnLock){
+      btnLock.textContent = state.rankLocked ? "Unlock scope" : "Lock scope";
+      btnLock.title = state.rankLocked
+        ? `Rankings frozen at ${state.lockedWindowRounds} rds (locked ${state.lockedAtISO ? new Date(state.lockedAtISO).toLocaleString() : ""})`
+        : "Freeze rankings to prevent accidental scope changes mid-match";
+    }
+    if (sw){
+      sw.disabled = !!state.rankLocked;
+      if (state.rankLocked) sw.value = String(state.lockedWindowRounds ?? state.windowRounds);
+    }
   }
 
   function render(){
@@ -3098,8 +3581,25 @@ if (state.detailMode === "import"){
   }
 
 function wire(){
+    // Phase 1–5 styles (small additive)
+    const st = document.createElement("style");
+    st.textContent = `
+      .scoreCell{ cursor:pointer; text-decoration: underline dotted rgba(255,255,255,.25); text-underline-offset: 2px; }
+      .scoreCell:hover{ text-decoration-color: rgba(255,255,255,.55); }
+      .chip.impact{ font-weight:900; }
+      .chip.impact.good{ border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.12); color: rgba(220,252,231,.95); }
+      .chip.impact.neutral{ border-color: rgba(148,163,184,.28); background: rgba(148,163,184,.10); color: rgba(226,232,240,.92); }
+      .chip.impact.bad{ border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.12); color: rgba(254,226,226,.95); }
+      #guideOverlay{ display:none; }
+    `;
+    document.head.appendChild(st);
+
     wireSessionModal();
     $("selWindow").addEventListener("change", (e) => {
+      if (state.rankLocked){
+        e.target.value = String(state.lockedWindowRounds ?? state.windowRounds);
+        return;
+      }
       state.windowRounds = parseInt(e.target.value, 10);
       render();
     });
@@ -3113,6 +3613,65 @@ function wire(){
     });
 
         $("btnClear").addEventListener("click", clearAll);
+
+    // Phase 1: score breakdown popover
+    const scorePop = $("scorePop");
+    const scorePopBody = $("scorePopBody");
+    const closeScorePop = () => { if (scorePop) scorePop.style.display = "none"; };
+    $("btnScorePopClose")?.addEventListener("click", closeScorePop);
+    document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") { closeScorePop(); } });
+
+    // Delegate click from ranking table to show score breakdown
+    $("rankBody").addEventListener("click", (ev) => {
+      const el = ev.target.closest?.(".scoreCell");
+      if (!el) return;
+      ev.stopPropagation();
+      const bid = el.getAttribute("data-barrel");
+      const breakdown = scoreBreakdown(bid);
+      if (!breakdown) return;
+      scorePopBody.innerHTML = breakdown.html;
+      // position popover near click, but keep on-screen
+      const r = el.getBoundingClientRect();
+      const w = 360, h = 260;
+      let left = Math.min(window.innerWidth - w - 12, Math.max(12, r.left));
+      let top = Math.min(window.innerHeight - h - 12, Math.max(12, r.bottom + 10));
+      scorePop.style.position = "fixed";
+      scorePop.style.left = left + "px";
+      scorePop.style.top = top + "px";
+      scorePop.style.right = "auto";
+      scorePop.style.display = "block";
+    });
+
+    // Hide score popover on outside click
+    document.addEventListener("click", (ev) => {
+      if (!scorePop || scorePop.style.display === "none") return;
+      const inside = ev.target.closest?.("#scorePop") || ev.target.closest?.(".scoreCell");
+      if (!inside) closeScorePop();
+    });
+
+    // Phase 4: match-day scope lock
+    $("btnLockScope")?.addEventListener("click", () => {
+      state.rankLocked = !state.rankLocked;
+      if (state.rankLocked){
+        state.lockedWindowRounds = state.windowRounds;
+        state.lockedAtISO = new Date().toISOString();
+      } else {
+        state.lockedWindowRounds = null;
+        state.lockedAtISO = null;
+      }
+      renderLabels();
+      renderRanking();
+    });
+
+    // Phase 5: guide modal
+    const guide = $("guideOverlay");
+    const openGuide = () => { if (!guide) return; document.body.classList.add("modalOpen"); guide.style.display = "flex"; guide.setAttribute("aria-hidden","false"); };
+    const closeGuide = () => { if (!guide) return; document.body.classList.remove("modalOpen"); guide.style.display = "none"; guide.setAttribute("aria-hidden","true"); };
+    $("btnGuide")?.addEventListener("click", openGuide);
+    $("btnGuideClose")?.addEventListener("click", closeGuide);
+    $("btnGuideOk")?.addEventListener("click", closeGuide);
+    guide?.addEventListener("click", (e) => { if (e.target === guide) closeGuide(); });
+    document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") closeGuide(); });
 
     $("btnImportGlobal").addEventListener("click", () => {
       if (!state.selectedBarrelId){
@@ -3183,7 +3742,7 @@ function wire(){
           state.selectedBarrelId = (state.barrels[0] && state.barrels[0].id) ? state.barrels[0].id : null;
         }
 
-        state.detailMode = "list";
+        state.detailMode = "timeline";
         render();
       }catch(err){
         alert("Import failed: " + String(err && err.message ? err.message : err));
