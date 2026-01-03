@@ -7,18 +7,19 @@
 <title>BarrelTracker</title>
 <script>
   // Single source of truth for displayed tool version
-  window.BT_APP = { name: "BarrelTracker", version: "4.5.9" };
+  window.BT_APP = { name: "BarrelTracker", version: "4.5.15", channel: "release" };
   document.title = `${window.BT_APP.name} — v${window.BT_APP.version}`;
 </script>
 <style>
   :root{
+    color-scheme: dark;
     --bg:#0b0f17;
     --panel:#0f172a;
     --panel2:#0b1227;
     --row:#0f172a;
     --row-alt:#0c1324;
-    --text:#e5e7eb;
-    --muted:#94a3b8;
+    --text:#d9e2ee;
+    --muted:#8ea0b6;
     --hi:#22c55e;
     --mod:#f59e0b;
     --low:#64748b;
@@ -124,7 +125,7 @@
     border:1px solid rgba(255,255,255,.08);
     border-radius:999px;
     padding:7px 10px;
-    color:#c7d2fe;
+    color:#b6c3f2;
     font-size:12px;
     backdrop-filter: blur(8px);
   }
@@ -191,6 +192,31 @@
     color:var(--text);
     font-size:13px;
   }
+  
+  /* Dark dropdown menus (options list) */
+  .select option, .select optgroup{
+    background: #0b1227;
+    color: var(--text);
+  }
+  .select:disabled{
+    opacity:.6;
+    cursor:not-allowed;
+  }
+.input{
+    background:rgba(2,6,23,.45);
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:12px;
+    padding:8px 12px;
+    color:var(--text);
+    font-size:13px;
+    outline:none;
+  }
+  .input::placeholder{ color: rgba(142,160,182,.85); }
+  .input:focus{
+    border-color: rgba(37,99,235,.55);
+    box-shadow: 0 0 0 3px rgba(37,99,235,.18);
+  }
+
   .toggle{
     display:flex; gap:8px; align-items:center;
     padding:8px 10px;
@@ -216,7 +242,7 @@
     border-radius:999px;
     border:1px solid rgba(255,255,255,.14);
     background:rgba(2,6,23,.35);
-    color:#c7d2fe;
+    color:#b6c3f2;
     font-size:12px;
     font-weight:900;
     cursor:help;
@@ -232,7 +258,7 @@
   thead th{
     text-align:left;
     font-weight:700;
-    color:#c7d2fe;
+    color:#b6c3f2;
     padding:10px 10px;
     border-bottom:1px solid rgba(255,255,255,.08);
     white-space:nowrap;
@@ -256,6 +282,7 @@
   .barrel{font-weight:800}
   .score{font-weight:900}
   .muted{color:var(--muted)}
+  .conf{font-weight:800}
   .conf.high{color:var(--hi)}
   .conf.mod{color:var(--mod)}
   .conf.low{color:var(--low)}
@@ -279,6 +306,19 @@
   .spark .dot{fill:currentColor}
   .trendwrap{display:flex; align-items:center; gap:10px}
   .trendwrap .arrow{min-width:18px; text-align:center; font-weight:900}
+
+  /* v4.3-style trend cell (inline icon + spark) */
+  .trendMini{
+    border:0;
+    background:transparent;
+    padding:0;
+    margin:0;
+    color:inherit;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+  }
+  .trendMini:focus{ outline: 2px solid rgba(148,163,184,.45); outline-offset: 2px; border-radius:10px; }
 
   /* detail drawer */
   .drawer{
@@ -329,7 +369,7 @@
     font-size:12px;
     border:1px solid rgba(255,255,255,.10);
     background:rgba(2,6,23,.45);
-    color:#c7d2fe;
+    color:#b6c3f2;
   }
   .chip.sighters{color:#e5e7eb}
   .fileLine{margin-top:6px; font-size:12px; color:var(--muted)}
@@ -366,8 +406,6 @@
     font-size:12px;
     font-weight:700;
   }
-
-  .btn.sm{padding:7px 10px; border-radius:11px; font-size:12px}
   .pop{
     position:absolute;
     right:18px;
@@ -514,7 +552,7 @@ td.lastCol .lsSub{ margin-top:2px; font-size:12px; color:var(--muted); white-spa
   .toast .tTitle{font-weight:900;font-size:13px;letter-spacing:.2px;}
   .toast .tMsg{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.35;}
   .toast .tClose{border:none;background:transparent;color:var(--muted);cursor:pointer;font-weight:900;line-height:1;padding:2px 6px;border-radius:10px;}
-  .toast .tClose:hover{background:rgba(255,255,255,.08);color:#e5e7eb;}
+  .toast .tClose:hover{background:rgba(255,255,255,.08);color:var(--text);}
   .toast[data-kind="success"]{border-color:rgba(34,197,94,.35);}
   .toast[data-kind="warn"]{border-color:rgba(245,158,11,.35);}
   .toast[data-kind="error"]{border-color:rgba(239,68,68,.35);}
@@ -546,6 +584,28 @@ td.lastCol .lsSub{ margin-top:2px; font-size:12px; color:var(--muted); white-spa
   .controls{flex-wrap:wrap;}
   .controls .input{height:36px;border-radius:12px;}
 
+
+/* Hover tooltips (offline-safe; works on file://) */
+.uiTooltip{
+  position: fixed;
+  left: 0; top: 0;
+  z-index: 99999;
+  display: none;
+  max-width: 320px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.96);
+  color: rgba(226, 232, 240, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 10px 30px rgba(0,0,0,.45);
+  font-size: 12.5px;
+  line-height: 1.25;
+  pointer-events: none;
+  white-space: normal;
+}
+
+
+th[data-tip]{cursor:help;}
 </style>
 </head>
 <body>
@@ -554,10 +614,10 @@ td.lastCol .lsSub{ margin-top:2px; font-size:12px; color:var(--muted); white-spa
   <div class="suiteHeader__left">
     <div class="suiteHeader__topline">
       <div class="suiteHeader__title">BarrelTracker</div>
-      <div class="suiteHeader__pill" id="pillVersion">v4.5.9</div>
+      <div class="suiteHeader__pill" id="pillVersion">v4.5.15</div>
       <div class="suiteHeader__pill suiteHeader__pill--muted">standalone</div>
     </div>
-    <div class="suiteHeader__tagline">BarrelTracker Build (v4.5.9)</div>
+    <div class="suiteHeader__tagline">Offline barrel performance tracker (v4.5.15) — import sessions, rank barrels, review trends.</div>
   </div>
   <div class="suiteHeader__right">
     <div class="suiteHeader__actions">
@@ -660,12 +720,12 @@ td.lastCol .lsSub{ margin-top:2px; font-size:12px; color:var(--muted); white-spa
               <th data-col="idx">#</th>
               <th data-col="barrel">Barrel</th>
               <th data-col="rank">Rank</th>
-              <th data-col="conf">Conf</th>
+              <th data-col="conf" data-tip="Confidence (trust): sample size + consistency + data quality. Scales Rank; doesn’t create performance.">Conf</th>
               <th data-col="vert">Vert (MOA)</th>
               <th data-col="mr">MR (MOA)</th>
               <th data-col="sd">SD (fps)</th>
               <th data-col="life">Life</th>
-              <th data-col="trend">Trend</th>
+              <th data-col="trend" data-tip="Trend vs rolling baseline in this window. ▲ improving, ▼ degrading, • flat. Click the icon for details.">Trend</th>
               <th data-col="last" class="lastCol">Last session</th>
             </tr>
           </thead>
@@ -756,7 +816,7 @@ td.lastCol .lsSub{ margin-top:2px; font-size:12px; color:var(--muted); white-spa
         <div class="footerNote">Tip: click a Score to see the full breakdown. Click a row to open the barrel timeline.</div>
       </div>
       <div class="modalFoot">
-        <div class="mini">v4.5.9 • local-only</div>
+        <div class="mini">v4.5.10 • local-only</div>
         <div>
           <button class="btn" id="btnGuideOk">Close</button>
         </div>
@@ -796,10 +856,10 @@ td.lastCol .lsSub{ margin-top:2px; font-size:12px; color:var(--muted); white-spa
 
 <script>
 (() => {
-  const APP = (window.BT_APP && typeof window.BT_APP === "object") ? window.BT_APP : { name:"BarrelTracker", version: "4.5.9" };
+  const APP = (window.BT_APP && typeof window.BT_APP === "object") ? window.BT_APP : { name:"BarrelTracker", version: "4.5.15" };
   const APP_VERSION_TAG = `v${APP.version}`;
 
-  const SCHEMA_VERSION = 3; // export/import schema (migrations supported) // export/import schema (migrations supported)
+  const SCHEMA_VERSION = 3; // export/import schema (migrations supported)
 
   // ---------- Phase 0–3 UX helpers ----------
   const $id = (id) => document.getElementById(id);
@@ -1052,7 +1112,7 @@ function summarizeImportErrors(errs, maxLines){
 
 
   
-// Trend popover (click Trend pill)
+// Trend popover (click Trend mini)
 let _trendPopOpen = false;
 
 function ensureTrendPopoverUI(){
@@ -3600,32 +3660,26 @@ function ensureBarrel(id){
         `;
       } else {
         const a = r.agg;
-        
-        
-const confPill = `<span class="pill ${a.conf === "high" ? "good" : a.conf === "mod" ? "mid" : "bad"}">${CONF_LABEL[a.conf] || a.conf}</span>`;
 
-const trendCell = a.trend === "up"
-  ? `<button type="button" class="pill good pillTrend" data-trend="${escapeHTML(r.barrel.id)}">Up</button>`
-  : a.trend === "down"
-    ? `<button type="button" class="pill bad pillTrend" data-trend="${escapeHTML(r.barrel.id)}">Down</button>`
-    : `<button type="button" class="pill muted pillTrend" data-trend="${escapeHTML(r.barrel.id)}">Neutral</button>`;
+        // v4.3 table styling: confidence as plain text, trend as arrow + sparkline (click opens popover)
+        const confLabel = CONF_LABEL[a.conf] || a.conf;
+        const confCell = `<span class="conf ${escapeHTML(a.conf)}" data-tip="${escapeHTML(confTooltip(a))}">${escapeHTML(confLabel)}</span>`;
 
-const confCell = confPill;
+        const trendDir = (a.trend === "up") ? "up" : (a.trend === "down") ? "down" : "flat";
+        const trendArrow = (a.trend === "up") ? "▲" : (a.trend === "down") ? "▼" : "•";
+        const trendCell = `<button type="button" class="trendMini trend ${trendDir}" data-trend="${escapeHTML(r.barrel.id)}" data-tip="${escapeHTML(trendTooltip(a))}"><span class="trendwrap"><span class="arrow">${trendArrow}</span>${trendSparkSVG(a.trend)}</span></button>`;
 
-        tr.innerHTML = `
+tr.innerHTML = `
           <td data-col="idx">${i+1}</td>
           <td data-col="barrel" class="barrel">${escapeHTML(r.barrel.display)}</td>
           <td data-col="rank"><b>${fmt1(a.score)}</b></td>
           <td data-col="conf">${confCell}</td>
           <td data-col="vert">${fmt2(a.vert)}</td>
           <td data-col="mr">${fmt2(a.mr)}</td>
-          <td data-col="sd">${fmt0(a.sd)}</td>
+          <td data-col="sd">${fmt1(a.sd)}</td>
           <td data-col="life">${escapeHTML(String(r.life ?? 0))}</td>
           <td data-col="trend">${trendCell}</td>
-          <td data-col="last" class="lastCol">
-            <div class="lsTop">${escapeHTML(a.last || "—")}</div>
-            <div class="lsSub">${escapeHTML(a.lastLabel || "")}</div>
-          </td>
+          <td data-col="last" class="lastCol">${renderLastSessionCell(a)}</td>
         `;
 }
 
@@ -3796,7 +3850,7 @@ const confCell = confPill;
       </div>
 
       <details style="margin-top:10px;">
-        <summary style="cursor:pointer;color:#c7d2fe;font-weight:800;">Optional notes</summary>
+        <summary style="cursor:pointer;color:#b6c3f2;font-weight:800;">Optional notes</summary>
         <div style="margin-top:10px;">
           <textarea id="fNotes" class="select" style="width:100%;min-height:90px;resize:vertical;" placeholder="Notes (wind, mirage, call quality, equipment changes, etc.)"></textarea>
         </div>
@@ -4166,9 +4220,14 @@ if (state.detailMode === "import"){
     chips.push(`<span class="chip">Vert ${s.vert.toFixed(2)} MOA</span>`);
     chips.push(`<span class="chip">MR ${s.mr.toFixed(2)} MOA</span>`);
     chips.push(`<span class="chip">SD ${s.sd.toFixed(1)} fps</span>`);
-    chips.push(`<span class="chip conf ${s.confidence}">${CONF_LABEL[s.confidence] || s.confidence}</span>`);
+    const confTxt = (CONF_LABEL[s.confidence] || s.confidence);
+    const confTip = `Confidence: ${confTxt} — trust in the data (sample size + consistency + data quality). It scales Rank; it doesn’t “create” performance.`;
+    chips.push(`<span class="chip conf ${s.confidence}" data-tip="${escapeHTML(confTip)}">${escapeHTML(confTxt)}</span>`);
     const imp = impactLabel(s, agg);
-    chips.push(`<span class="chip impact ${imp.key}">${imp.key==="good"?"🟢":imp.key==="bad"?"🔴":"⚪"} ${imp.text}</span>`);
+    const impTip = (imp.key==="good") ? "Session impact vs rolling baseline: improved Vert by ≥0.05 MOA and did not increase SD." :
+      (imp.key==="bad") ? "Session impact vs rolling baseline: worsened Vert by ≥0.05 MOA and increased SD by ≥0.5 fps." :
+      "Session impact vs rolling baseline: within the noise band (no clear improvement/regression).";
+    chips.push(`<span class="chip impact ${imp.key}" data-tip="${escapeHTML(impTip)}">${imp.key==="good"?"🟢":imp.key==="bad"?"🔴":"⚪"} ${escapeHTML(imp.text)}</span>`);
 
     return `
       <div class="sessionRow" data-sid="${s.id}">
@@ -4819,12 +4878,12 @@ $("btnAddBarrel").addEventListener("click", () => {
       render();
     });
 
-// Trend popover (click Trend pill)
+// Trend popover (click Trend mini)
 const rankBody = $("rankBody");
 if (rankBody){
   rankBody.addEventListener("click", (e) => {
     const t = (e.target && e.target.nodeType===3) ? e.target.parentElement : e.target;
-    const btn = t?.closest?.(".pillTrend");
+    const btn = t?.closest?.(".trendMini");
     if (!btn) return;
     e.preventDefault();
     e.stopPropagation();
@@ -4839,8 +4898,77 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideTrendP
 
 }
 
+
+  // Hover tooltips (offline-safe; avoids relying on browser native tooltip quirks)
+  function initHoverTooltips(){
+    if (document.getElementById("uiTooltip")) return;
+    const tt = document.createElement("div");
+    tt.id = "uiTooltip";
+    tt.className = "uiTooltip";
+    document.body.appendChild(tt);
+
+    let active = null;
+
+    function hide(){
+      active = null;
+      tt.style.display = "none";
+    }
+    function show(el, text){
+      active = el;
+      tt.textContent = text;
+      tt.style.display = "block";
+    }
+    function position(ev){
+      if (!active || tt.style.display === "none") return;
+      let x = (ev && ev.clientX != null) ? ev.clientX : (active.getBoundingClientRect().left + 12);
+      let y = (ev && ev.clientY != null) ? ev.clientY : (active.getBoundingClientRect().top + 12);
+      x += 14; y += 14;
+
+      const pad = 10;
+      const w = tt.offsetWidth || 0;
+      const h = tt.offsetHeight || 0;
+      const vw = window.innerWidth || 0;
+      const vh = window.innerHeight || 0;
+      if (x + w + pad > vw) x = Math.max(pad, vw - w - pad);
+      if (y + h + pad > vh) y = Math.max(pad, vh - h - pad);
+
+      tt.style.left = x + "px";
+      tt.style.top  = y + "px";
+    }
+
+    document.addEventListener("mouseover", (ev) => {
+      const el = ev.target?.closest?.("[data-tip]");
+      if (!el) return;
+      const msg = el.getAttribute("data-tip");
+      if (!msg) return;
+      show(el, msg);
+      position(ev);
+    }, true);
+
+    document.addEventListener("mousemove", (ev) => {
+      if (!active) return;
+      position(ev);
+    }, { passive:true });
+
+    document.addEventListener("mouseout", (ev) => {
+      if (!active) return;
+      const from = ev.target?.closest?.("[data-tip]");
+      if (!from || from !== active) return;
+      const to = ev.relatedTarget?.closest?.("[data-tip]");
+      if (to === active) return;
+      hide();
+    }, true);
+
+    // If the UI changes under you, just hide to avoid "dangling" tooltips
+    window.addEventListener("scroll", hide, { passive:true, capture:true });
+    window.addEventListener("resize", hide, { passive:true });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") hide(); });
+  }
+
+
   document.addEventListener("DOMContentLoaded", () => {
     wire();
+    initHoverTooltips();
     render();
   });
 })();
