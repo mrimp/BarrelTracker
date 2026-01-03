@@ -1,9 +1,15 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>BarrelTracker — v4.3</title>
+<title>BarrelTracker</title>
+<script>
+  // Single source of truth for displayed tool version
+  window.BT_APP = { name: "BarrelTracker", version: "4.5.9" };
+  document.title = `${window.BT_APP.name} — v${window.BT_APP.version}`;
+</script>
 <style>
   :root{
     --bg:#0b0f17;
@@ -82,18 +88,10 @@
     .suiteHeader__badge{ width:56px; height:56px; }
   }
   /* Hide legacy header styles (replaced) */
-  header{ display:none; }.wrap{
+  .wrap{
     max-width:1240px;
     margin:0 auto;
     padding:28px 18px 70px;
-  }
-
-  header{
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-start;
-    gap:16px;
-    margin-bottom:16px;
   }
   .title{
     display:flex; gap:12px; align-items:center;
@@ -489,6 +487,65 @@ th.lastCol, td.lastCol{ max-width:160px; width:160px; }
 td.lastCol .lsTop{ font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 td.lastCol .lsSub{ margin-top:2px; font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
+
+  /* Phase 0–3 UX: toasts + confirm */
+  .toastHost{
+    position:fixed;
+    right:16px;
+    bottom:16px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    z-index:10000;
+    pointer-events:none;
+  }
+  .toast{
+    pointer-events:auto;
+    min-width:260px;
+    max-width:min(420px, 92vw);
+    border-radius:16px;
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(2,6,23,.92);
+    backdrop-filter: blur(10px);
+    padding:10px 12px;
+    box-shadow: 0 14px 34px rgba(0,0,0,.45);
+  }
+  .toast .tTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .toast .tTitle{font-weight:900;font-size:13px;letter-spacing:.2px;}
+  .toast .tMsg{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.35;}
+  .toast .tClose{border:none;background:transparent;color:var(--muted);cursor:pointer;font-weight:900;line-height:1;padding:2px 6px;border-radius:10px;}
+  .toast .tClose:hover{background:rgba(255,255,255,.08);color:#e5e7eb;}
+  .toast[data-kind="success"]{border-color:rgba(34,197,94,.35);}
+  .toast[data-kind="warn"]{border-color:rgba(245,158,11,.35);}
+  .toast[data-kind="error"]{border-color:rgba(239,68,68,.35);}
+
+  .confirmOverlay{
+    position:fixed; inset:0;
+    background:rgba(2,6,23,.72);
+    backdrop-filter: blur(6px);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:22px 14px;
+    z-index:10001;
+  }
+  .confirmCard{
+    width:min(520px, 96vw);
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(15,23,42,.96);
+    border-radius:18px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.55);
+    padding:14px;
+  }
+  .confirmTitle{font-weight:900;font-size:15px;}
+  .confirmMsg{margin-top:6px;color:var(--muted);font-size:13px;line-height:1.4;white-space:pre-line;}
+  .confirmActions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap;}
+  .confirmActions .btn{min-width:96px;}
+
+  /* Controls wrap better on narrow widths */
+  .controls{flex-wrap:wrap;}
+  .controls .input{height:36px;border-radius:12px;}
+
 </style>
 </head>
 <body>
@@ -497,10 +554,10 @@ td.lastCol .lsSub{ margin-top:2px; font-size:12px; color:var(--muted); white-spa
   <div class="suiteHeader__left">
     <div class="suiteHeader__topline">
       <div class="suiteHeader__title">BarrelTracker</div>
-      <div class="suiteHeader__pill" id="pillVersion">v4.3</div>
+      <div class="suiteHeader__pill" id="pillVersion">v4.5.9</div>
       <div class="suiteHeader__pill suiteHeader__pill--muted">standalone</div>
     </div>
-    <div class="suiteHeader__tagline">Import-first build (v4.3) — Phases 1–5: transparent scoring, guardrails, decay cues, match-day scope + quick guide.</div>
+    <div class="suiteHeader__tagline">Build (v4.5.9)</div>
   </div>
   <div class="suiteHeader__right">
     <div class="suiteHeader__actions">
@@ -535,6 +592,29 @@ td.lastCol .lsSub{ margin-top:2px; font-size:12px; color:var(--muted); white-spa
             <option value="mod" selected>Min confidence: Moderate</option>
             <option value="high">Min confidence: High</option>
           </select>
+          <input id="inpSearch" class="input" placeholder="Search barrel…" style="width:180px;" />
+          <select id="selFilter" class="select">
+            <option value="all" selected>Show: All</option>
+            <option value="with">Show: With sessions</option>
+            <option value="needs">Show: Needs data</option>
+            <option value="lowconf">Show: Low confidence</option>
+          </select>
+          <select id="selSort" class="select">
+            <option value="rank" selected>Sort: Rank</option>
+            <option value="conf">Sort: Confidence</option>
+            <option value="vert">Sort: Vert</option>
+            <option value="mr">Sort: MR</option>
+            <option value="sd">Sort: SD</option>
+            <option value="life">Sort: Life</option>
+            <option value="last">Sort: Last</option>
+          </select>
+          <select id="selLayout" class="select" title="Column layout">
+            <option value="Default" selected>Layout: Default</option>
+            <option value="Compact">Layout: Compact</option>
+            <option value="Scoring">Layout: Scoring</option>
+            <option value="Custom">Layout: Custom</option>
+          </select>
+          <button class="btn" id="btnColumns" title="Choose which columns to show">Columns</button>
           <label class="toggle"><input id="chkSighters" type="checkbox" checked /> Show sighters</label>
           <button class="btn primary" id="btnImportGlobal">Import</button>
           <button class="btn" id="btnImportJSON">Import JSON</button>
@@ -573,20 +653,20 @@ td.lastCol .lsSub{ margin-top:2px; font-size:12px; color:var(--muted); white-spa
 </div>
       </div>
 
-      <div style="overflow:auto;">
+      <div id="rankWrap" class="rankWrap" style="overflow:auto;">
         <table>
           <thead>
             <tr>
-              <th>#</th>
-              <th>Barrel</th>
-              <th>Rank</th>
-              <th>Conf</th>
-              <th>Vert (MOA)</th>
-              <th>MR (MOA)</th>
-              <th>SD (fps)</th>
-              <th>Life</th>
-              <th>Trend</th>
-              <th class="lastCol">Last session</th>
+              <th data-col="idx">#</th>
+              <th data-col="barrel">Barrel</th>
+              <th data-col="rank">Rank</th>
+              <th data-col="conf">Conf</th>
+              <th data-col="vert">Vert (MOA)</th>
+              <th data-col="mr">MR (MOA)</th>
+              <th data-col="sd">SD (fps)</th>
+              <th data-col="life">Life</th>
+              <th data-col="trend">Trend</th>
+              <th data-col="last" class="lastCol">Last session</th>
             </tr>
           </thead>
           <tbody id="rankBody"></tbody>
@@ -641,6 +721,16 @@ td.lastCol .lsSub{ margin-top:2px; font-size:12px; color:var(--muted); white-spa
         <button class="iconBtn" id="btnGuideClose">✕</button>
       </div>
       <div class="modalBody">
+        <div class="card" style="margin-bottom:14px;">
+          <div class="cardHead" style="display:flex;align-items:center;justify-content:space-between;">
+            <div><b>What’s new</b> <span class="small" style="color:var(--muted);" id="whatsNewVer">v</span></div>
+            <button class="btn sm" id="btnSupportBundle" title="Exports extra diagnostics to help debug issues">Export support bundle</button>
+          </div>
+          <div class="small" style="color:var(--muted);line-height:1.45;">
+            Phase 4–5: Column layouts + saved visibility, tooltip help on Confidence/Trend, and schema-aware exports.
+          </div>
+        </div>
+
         <div class="tileGrid">
           <div class="tile">
             <div class="tTitle">Vertical-first philosophy</div>
@@ -666,7 +756,7 @@ td.lastCol .lsSub{ margin-top:2px; font-size:12px; color:var(--muted); white-spa
         <div class="footerNote">Tip: click a Score to see the full breakdown. Click a row to open the barrel timeline.</div>
       </div>
       <div class="modalFoot">
-        <div class="mini">v4.3 • local-only</div>
+        <div class="mini">v4.5.9 • local-only</div>
         <div>
           <button class="btn" id="btnGuideOk">Close</button>
         </div>
@@ -674,8 +764,178 @@ td.lastCol .lsSub{ margin-top:2px; font-size:12px; color:var(--muted); white-spa
     </div>
   </div>
 
+
+  <!-- Columns & Layout modal (Phase 4) -->
+  <div class="modalOverlay" id="colsOverlay" aria-hidden="true">
+    <div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="colsTitle" style="max-width:720px;">
+      <div class="modalHead">
+        <div>
+          <h3 id="colsTitle">Columns & Layout</h3>
+          <div class="small" style="color:var(--muted);margin-top:2px;">Choose which columns appear in the ranking table. Saved locally.</div>
+        </div>
+        <button class="iconBtn" id="btnColsClose">✕</button>
+      </div>
+      <div class="modalBody">
+        <div class="colsGrid" id="colsGrid"></div>
+        <div class="colsHint">Tip: pick a preset from “Layout”, or customize here and it will save as “Custom”.</div>
+      </div>
+      <div class="modalFoot">
+        <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+          <div style="display:flex;gap:10px;align-items:center;">
+            <button class="btn" id="btnColsAll">Show all</button>
+            <button class="btn" id="btnColsCompact">Compact</button>
+            <button class="btn" id="btnColsReset">Reset default</button>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <button class="btn primary" id="btnColsOk">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <script>
 (() => {
+  const APP = (window.BT_APP && typeof window.BT_APP === "object") ? window.BT_APP : { name:"BarrelTracker", version: "4.5.9" };
+  const APP_VERSION_TAG = `v${APP.version}`;
+
+  const SCHEMA_VERSION = 3; // export/import schema (migrations supported) // export/import schema (migrations supported)
+
+  // ---------- Phase 0–3 UX helpers ----------
+  const $id = (id) => document.getElementById(id);
+
+  function ensureToastHost(){
+    let host = $id("toastHost");
+    if (!host){
+      host = document.createElement("div");
+      host.id = "toastHost";
+      host.className = "toastHost";
+      host.setAttribute("aria-live","polite");
+      document.body.appendChild(host);
+    }
+    return host;
+  }
+
+  function toast(msg, kind="success", title=null, ms=3600){
+    try{
+      const host = ensureToastHost();
+      const el = document.createElement("div");
+      el.className = "toast";
+      el.dataset.kind = kind;
+      const safeTitle = title || (kind==="error" ? "Error" : kind==="warn" ? "Heads up" : "Done");
+      el.innerHTML = `
+        <div class="tTop">
+          <div class="tTitle">${escapeHTML(safeTitle)}</div>
+          <button class="tClose" aria-label="Dismiss">✕</button>
+        </div>
+        <div class="tMsg">${escapeHTML(String(msg||""))}</div>
+      `;
+      el.querySelector(".tClose").addEventListener("click", () => el.remove());
+      host.appendChild(el);
+      if (ms > 0){
+        setTimeout(() => { try{ el.remove(); }catch{} }, ms);
+      }
+    }catch{
+      // last resort
+      console.log(`[${kind}] ${msg}`);
+    }
+  }
+
+  function ensureConfirmUI(){
+    let ov = $id("confirmOverlay");
+    if (ov) return ov;
+    ov = document.createElement("div");
+    ov.id = "confirmOverlay";
+    ov.className = "confirmOverlay";
+    ov.innerHTML = `
+      <div class="confirmCard" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+        <div class="confirmTitle" id="confirmTitle">Confirm</div>
+        <div class="confirmMsg" id="confirmMsg"></div>
+        <div class="confirmActions">
+          <button class="btn sm" id="btnConfirmCancel">Cancel</button>
+          <button class="btn sm primary" id="btnConfirmOK">OK</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(ov);
+    return ov;
+  }
+
+  function confirmDialog(message, { title="Confirm", okText="OK", cancelText="Cancel" } = {}){
+    return new Promise((resolve) => {
+      // Fallback if DOM not ready yet
+      if (!document.body){
+        resolve(window.confirm(message));
+        return;
+      }
+      const ov = ensureConfirmUI();
+      const card = ov.querySelector(".confirmCard");
+      const t = ov.querySelector("#confirmTitle");
+      const msg = ov.querySelector("#confirmMsg");
+      const bOk = ov.querySelector("#btnConfirmOK");
+      const bCancel = ov.querySelector("#btnConfirmCancel");
+
+      t.textContent = title;
+      msg.textContent = String(message||"");
+      bOk.textContent = okText;
+      bCancel.textContent = cancelText;
+
+      const cleanup = () => {
+        ov.style.display = "none";
+        ov.removeEventListener("click", onBG);
+        document.removeEventListener("keydown", onKey);
+        bOk.onclick = null;
+        bCancel.onclick = null;
+      };
+      const onBG = (e) => { if (e.target === ov) { cleanup(); resolve(false); } };
+      const onKey = (e) => { if (e.key === "Escape"){ cleanup(); resolve(false);} };
+
+      bOk.onclick = () => { cleanup(); resolve(true); };
+      bCancel.onclick = () => { cleanup(); resolve(false); };
+
+      ov.addEventListener("click", onBG);
+      document.addEventListener("keydown", onKey);
+      ov.style.display = "flex";
+      // focus
+      setTimeout(() => { try{ bOk.focus(); }catch{} }, 0);
+    });
+  }
+
+  // Cooperative yield to keep UI responsive on big imports
+  const tick = () => new Promise(r => setTimeout(r, 0));
+
+  function bumpRev(){
+    state.rev = (state.rev||0) + 1;
+    // cache invalidation
+    if (state._cache && state._cache.agg) state._cache.agg.clear();
+  }
+
+
+  function applyVersioning(){
+    // Keep displayed version consistent across title/header/modal/etc.
+    try {
+      document.title = `${APP.name} — ${APP_VERSION_TAG}`;
+
+      const pv = document.getElementById("pillVersion");
+      if (pv) pv.textContent = APP_VERSION_TAG;
+      const wnv = document.getElementById("whatsNewVer");
+      if (wnv) wnv.textContent = APP_VERSION_TAG;
+
+      const tl = document.querySelector(".suiteHeader__tagline");
+      if (tl) {
+        tl.textContent = tl.textContent.replace(/\(v[^)]+\)/, `(${APP_VERSION_TAG})`);
+      }
+
+      document.querySelectorAll(".modalFoot .mini").forEach(el => {
+        el.textContent = el.textContent.replace(/^v[0-9][0-9.]*\s*•/, `${APP_VERSION_TAG} •`);
+      });
+    } catch (e) {
+      // no-op (versioning should never block app start)
+    }
+  }
+
+  applyVersioning();
+
   const state = {
     barrels: [{ id:"B1", display:"B1" }],
     sessions: [],
@@ -685,6 +945,18 @@ td.lastCol .lsSub{ margin-top:2px; font-size:12px; color:var(--muted); white-spa
     windowRounds: 400,
     minConf: "mod",
     showSighters: true,
+
+    // Phase 1: UI state (search/filter/sort)
+    ui: {
+      search: "",
+      filter: "all",
+      sort: "rank"
+    },
+
+    // Phase 3: revision + caches
+    rev: 0,
+    _cache: { agg: new Map(), aggKey: "" },
+
 
     // Phase 4: match-day scope lock
     rankLocked: false,
@@ -708,6 +980,21 @@ const CONF_MULT = Object.freeze({ high: 1.00, mod: 0.90, low: 0.78 });
 
   const $ = (id) => document.getElementById(id);
 
+  
+  // Number formatting helpers (defensive)
+  const _NF0 = new Intl.NumberFormat(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const _NF1 = new Intl.NumberFormat(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const _NF2 = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  
+  function _num(x){
+    const v = (x === null || x === undefined || x === "") ? NaN : Number(x);
+    return Number.isFinite(v) ? v : null;
+  }
+  function fmt0(x){ const v = _num(x); return v === null ? "—" : _NF0.format(v); }
+  function fmt1(x){ const v = _num(x); return v === null ? "—" : _NF1.format(v); }
+  function fmt2(x){ const v = _num(x); return v === null ? "—" : _NF2.format(v); }
+  
+  
   function fmtDateShort(iso){
     const d = new Date(iso + "T00:00:00");
     return d.toLocaleDateString(undefined, { month:"short", day:"2-digit" });
@@ -731,7 +1018,11 @@ const CONF_MULT = Object.freeze({ high: 1.00, mod: 0.90, low: 0.78 });
     ));
   }
 
-  function summarizeImportErrors(errs, maxLines){
+
+  
+
+  
+function summarizeImportErrors(errs, maxLines){
     const max = maxLines ?? 6;
     const buckets = new Map();
     for (const raw of (errs || [])){
@@ -760,7 +1051,149 @@ const CONF_MULT = Object.freeze({ high: 1.00, mod: 0.90, low: 0.78 });
   }
 
 
-  function renderImportNotes(notes){
+  
+// Trend popover (click Trend pill)
+let _trendPopOpen = false;
+
+function ensureTrendPopoverUI(){
+  let ov = document.getElementById("trendPop");
+  if (ov) return ov;
+  ov = document.createElement("div");
+  ov.id = "trendPop";
+  ov.innerHTML = `
+    <div class="trendCard" role="dialog" aria-modal="false" aria-label="Trend">
+      <div class="trendHead">
+        <div class="trendTitle">Trend</div>
+        <button class="trendClose" id="btnTrendClose" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="trendRow">
+        <div class="trendIcon neutral" id="trendIcon">—</div>
+        <svg class="trendSpark" id="trendSpark" viewBox="0 0 240 56" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="trendText" id="trendText"></div>
+    </div>
+  `;
+  document.body.appendChild(ov);
+
+  // Click outside to close
+  ov.addEventListener("pointerdown", (e) => {
+    if (e.target === ov) hideTrendPopover();
+  });
+  ov.querySelector("#btnTrendClose").addEventListener("click", hideTrendPopover);
+  return ov;
+}
+
+function hideTrendPopover(){
+  const ov = document.getElementById("trendPop");
+  if (!ov) return;
+  ov.classList.remove("show");
+  _trendPopOpen = false;
+}
+
+function _sparkPath(values){
+  const w = 240, h = 56, pad = 6;
+  if (!values || values.length < 2) return { d:"", dot:null };
+
+  // Lower vert is better → map min (best) toward top
+  const minV = Math.min(...values);
+  const maxV = Math.max(...values);
+  const span = (maxV - minV) || 1e-9;
+
+  const xs = values.map((_,i) => pad + (i * (w - pad*2) / (values.length - 1)));
+  const ys = values.map(v => pad + ((v - minV) / span) * (h - pad*2));
+
+  let d = `M ${xs[0].toFixed(2)} ${ys[0].toFixed(2)}`;
+  for (let i=1;i<values.length;i++){
+    d += ` L ${xs[i].toFixed(2)} ${ys[i].toFixed(2)}`;
+  }
+  return { d, dot: { x: xs[xs.length-1], y: ys[ys.length-1] } };
+}
+
+function openTrendPopover(barrelId, anchorEl){
+  const ov = ensureTrendPopoverUI();
+  const card = ov.querySelector(".trendCard");
+  const icon = ov.querySelector("#trendIcon");
+  const svg = ov.querySelector("#trendSpark");
+  const txt = ov.querySelector("#trendText");
+
+  // Determine state
+  const agg = getAggCached ? getAggCached(barrelId) : (aggregate ? aggregate(barrelId) : null);
+  const trend = agg?.trend || "flat";
+  const trendLabel = trend === "up" ? "Up" : trend === "down" ? "Down" : "Neutral";
+
+  // Icon styling
+  icon.classList.remove("good","bad","neutral");
+  if (trend === "up") icon.classList.add("good");
+  else if (trend === "down") icon.classList.add("bad");
+  else icon.classList.add("neutral");
+  icon.textContent = trend === "up" ? "▲" : trend === "down" ? "▼" : "•";
+
+  // Build series (use form window sessions; fall back to all sessions)
+  const win = (typeof formWindowSessions === "function") ? formWindowSessions(barrelId) : [];
+  const seriesSrc = (win && win.length) ? win : (typeof sessionsForBarrel === "function" ? sessionsForBarrel(barrelId) : []);
+  const series = seriesSrc
+    .slice(0, 8)
+    .slice()
+    .reverse()
+    .filter(s => Number.isFinite(Number(s.vert)))
+    .map(s => Number(s.vert));
+
+  const sp = _sparkPath(series);
+  svg.innerHTML = "";
+
+  if (!sp.d){
+    // No chart yet
+    const t = document.createElementNS("http://www.w3.org/2000/svg","text");
+    t.setAttribute("x","8"); t.setAttribute("y","32");
+    t.setAttribute("fill","rgba(148,163,184,.85)");
+    t.setAttribute("font-size","12");
+    t.textContent = "Need 2+ sessions with Vert in the form window.";
+    svg.appendChild(t);
+    txt.textContent = `Trend: ${trendLabel}.`;
+  } else {
+    const p = document.createElementNS("http://www.w3.org/2000/svg","path");
+    p.setAttribute("d", sp.d);
+    p.setAttribute("class", `sparkPath ${trend === "up" ? "good" : trend === "down" ? "bad" : "neutral"}`);
+    svg.appendChild(p);
+
+    const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx", sp.dot.x.toFixed(2));
+    c.setAttribute("cy", sp.dot.y.toFixed(2));
+    c.setAttribute("r","4.2");
+    c.setAttribute("class","sparkDot");
+    svg.appendChild(c);
+
+    const delta = (series.length >= 2) ? (series[series.length-1] - series[0]) : 0;
+    const deltaTxt = (series.length >= 2)
+      ? `ΔVert ${(delta>0?"+":"")}${fmt2(delta)} MOA (older → newer)`
+      : "";
+    txt.textContent = `Trend: ${trendLabel}${deltaTxt ? " • " + deltaTxt : ""}.`;
+  }
+
+  // Position near anchor (prefer below; flip if needed)
+  const r = anchorEl?.getBoundingClientRect?.() || { left: 20, top: 20, right: 20, bottom: 20, width: 0, height: 0 };
+  ov.classList.add("show");
+  _trendPopOpen = true;
+
+  // Ensure dimensions after display
+  const cw = card.offsetWidth || 340;
+  const ch = card.offsetHeight || 160;
+
+  const margin = 12;
+  let left = Math.round(r.left + (r.width/2) - (cw/2));
+  left = Math.max(margin, Math.min(left, window.innerWidth - cw - margin));
+
+  let top = Math.round(r.bottom + 10);
+  if (top + ch > window.innerHeight - margin){
+    top = Math.round(r.top - ch - 10);
+  }
+  top = Math.max(margin, Math.min(top, window.innerHeight - ch - margin));
+
+  card.style.left = left + "px";
+  card.style.top = top + "px";
+}
+
+function renderImportNotes(notes){
     const arr = (notes || []);
     const max = 30;
     const shown = arr.slice(0, max);
@@ -768,6 +1201,25 @@ const CONF_MULT = Object.freeze({ high: 1.00, mod: 0.90, low: 0.78 });
     const more = arr.length - shown.length;
     return lines + (more > 0 ? `<br/><span class="muted">…and ${more} more</span>` : "");
   }
+
+  function renderImportDiagnostics(diags){
+    const arr = (diags || []).slice().reverse(); // newest first
+    const max = 10;
+    const shown = arr.slice(0, max);
+    const lines = shown.map(d => {
+      const file = escapeHTML(d.file || "file");
+      const blk = (d.block != null) ? ` block ${d.block}` : "";
+      const shots = (d.shotsParsed != null) ? `${d.shotsParsed} shots` : "";
+      const unit = d.unit ? ` (${escapeHTML(d.unit)})` : "";
+      const map = d.map ? ` → <b>${escapeHTML(d.map)}</b>` : "";
+      const warn = (d.warnings && d.warnings.length) ? ` · <span style="color:#fde68a">${escapeHTML(d.warnings.join("; "))}</span>` : "";
+      const sample = (d.sample && d.sample.length) ? `<div style="margin-top:6px;color:var(--muted);">sample: <span style="font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;">${escapeHTML(d.sample.join(" | "))}</span></div>` : "";
+      return `<div style="margin-bottom:10px;"><b>${file}</b>${blk}: ${escapeHTML(shots)}${unit}${map}${warn}${sample}</div>`;
+    }).join("");
+    const more = (arr.length > max) ? `<div style="color:var(--muted);">(+${arr.length-max} more)</div>` : "";
+    return lines + more;
+  }
+
 
 
 
@@ -797,8 +1249,10 @@ const CONF_MULT = Object.freeze({ high: 1.00, mod: 0.90, low: 0.78 });
   function buildExportPayload(){
     const now = new Date();
     return {
-      app: "BarrelTracker",
-      export_version: "v1",
+      app: APP.name,
+      tool_version: APP_VERSION_TAG,
+      export_version: "v3",
+      schema_version: SCHEMA_VERSION,
       created_at: now.toISOString(),
       state: {
         barrels: state.barrels || [],
@@ -807,10 +1261,100 @@ const CONF_MULT = Object.freeze({ high: 1.00, mod: 0.90, low: 0.78 });
           windowRounds: state.windowRounds,
           minConfidence: state.minConf,
           showSighters: state.showSighters
-        }
+        },
+        ui: state.ui || null,
+        import_diagnostics: state.importDiagnostics || null
       }
     };
   }
+
+  
+  function buildSupportBundle(){
+    const payload = buildExportPayload();
+    return {
+      app: payload.app,
+      tool_version: payload.tool_version,
+      export_version: "support_v1",
+      schema_version: payload.schema_version,
+      created_at: payload.created_at,
+      env: {
+        userAgent: navigator.userAgent,
+        language: navigator.language,
+        platform: navigator.platform
+      },
+      diagnostics: {
+        ui: state.ui || null,
+        import_diagnostics: state.importDiagnostics || null
+      },
+      state: payload.state
+    };
+  }
+
+function migrateExportPayload(payload){
+    // Accept older exports and normalize to the current in-memory shape.
+    const p = payload && typeof payload === "object" ? payload : {};
+    const sv = (p.schema_version != null) ? Number(p.schema_version) : null;
+    const ev = String(p.export_version || "v1");
+
+    // Base validation
+    if (!p.state || typeof p.state !== "object") return p;
+
+    // v1 -> v2: settings key normalization (minConfidence -> minConf in state)
+    // and ensure required top-level fields exist.
+    if (sv == null && ev === "v1"){
+      p.schema_version = 1;
+    }
+
+    // Normalize settings
+    const set = p.state.settings || {};
+    if (set && typeof set === "object"){
+      // keep key for backwards compat, but normalize access later
+      if (set.minConf == null && set.minConfidence != null) set.minConf = set.minConfidence;
+    }
+
+    // v2 -> v3: UI prefs (columns/layout) & import diagnostics (optional)
+    if (Number(p.schema_version) <= 2){
+      p.schema_version = 3;
+    }
+
+
+    // Normalize barrels
+    if (Array.isArray(p.state.barrels)){
+      p.state.barrels = p.state.barrels
+        .filter(b => b && b.id)
+        .map(b => ({
+          id: String(b.id),
+          display: b.display != null ? String(b.display) : String(b.id),
+          twist: b.twist != null ? String(b.twist) : undefined
+        }));
+    }
+
+    // Normalize sessions
+    if (Array.isArray(p.state.sessions)){
+      p.state.sessions = p.state.sessions
+        .filter(s => s && s.id && s.barrelId)
+        .map(s => ({
+          id: String(s.id),
+          barrelId: String(s.barrelId),
+          date: s.date != null ? String(s.date) : null,
+          label: s.label != null ? String(s.label) : "",
+          vert: toNum(s.vert) ?? null,
+          mr: toNum(s.mr) ?? null,
+          sd: toNum(s.sd) ?? null,
+          confidence: (s.confidence === "high" || s.confidence === "mod" || s.confidence === "low") ? s.confidence : "low",
+          shotsUsed: (s.shotsUsed != null ? Number(s.shotsUsed) : (s.shotsUsed===0?0:null)),
+          shotsTotal: (s.shotsTotal != null ? Number(s.shotsTotal) : (s.shotsTotal===0?0:null)),
+          sighters: !!s.sighters,
+          sourceFile: s.sourceFile != null ? String(s.sourceFile) : "",
+          distanceYd: (s.distanceYd != null ? Number(s.distanceYd) : null),
+          chronoShots: (s.chronoShots != null ? Number(s.chronoShots) : null),
+          chronoSource: s.chronoSource != null ? String(s.chronoSource) : "",
+        }));
+    }
+
+    return p;
+  }
+
 
   function wireDropZone(el, onFiles){
     if (!el) return;
@@ -1921,6 +2465,25 @@ function normKey(k){
     return Number.isFinite(x) ? x : null;
   }
 
+  function sampleRowPreview(parsed, headers, limit=8){
+    try{
+      const row0 = (parsed && parsed.rows && parsed.rows[0]) ? parsed.rows[0] : null;
+      if (!row0) return [];
+      if (Array.isArray(row0)){
+        return row0.slice(0, limit).map(v => String(v ?? ""));
+      }
+      if (typeof row0 === "object"){
+        // Prefer header order for readability
+        const keys = (Array.isArray(headers) && headers.length) ? headers.filter(h => h in row0) : Object.keys(row0);
+        return keys.slice(0, limit).map(k => `${k}: ${String(row0[k] ?? "")}`);
+      }
+      return [String(row0)];
+    }catch(_e){
+      return [];
+    }
+  }
+
+
   function inchesToMOA(inches, yd){
     const d = Math.max(1, yd || 1000);
     return inches * 100 / (1.047 * d);
@@ -2040,8 +2603,19 @@ function parseDateTimeFromFilename(name){
           // try to find horizontal/vertical columns (ShotMarker uses x mm / y mm)
           const xCol = findCol(headers, ["x", "x mm", "xmm", "horiz", "horizontal", "dx", "x(in)", "x_in", "xinch", "x_inches"]);
           const yCol = findCol(headers, ["y", "y mm", "ymm", "vert", "vertical", "dy", "y(in)", "y_in", "yinch", "y_inches"]);
+          if (!imp.diagnostics) imp.diagnostics = [];
+          const hdrSample = (headers || []).slice(0, 10);
+          // We'll record what we detected even if we fail later.
           if (!xCol || !yCol){
-            imp.errors.push(`ShotMarker "${f.name}": couldn't find X/Y columns in block ${gi+1}. (Expected headers like x mm / y mm.)`);
+            imp.diagnostics.push({
+              file: f.name,
+              block: gi+1,
+              kind: "ShotMarker",
+              map: "missing x/y columns",
+              warnings: ["Couldn't detect x/y columns"],
+              sample: hdrSample
+            });
+            imp.errors.push(`ShotMarker "${f.name}": couldn't find x/y columns in block ${gi+1}. (Expected headers like x mm / y mm.)`);
             continue;
           }
 
@@ -2056,9 +2630,32 @@ function parseDateTimeFromFilename(name){
             shots.push({ x, y });
           }
           if (shots.length < 3){
+            const sampleRow = sampleRowPreview(parsed, headers, 8);
+            imp.diagnostics.push({
+              file: f.name,
+              block: gi+1,
+              kind: "ShotMarker",
+              map: `x="${xCol}" y="${yCol}"`,
+              unit: assumeMM ? "mm" : "unknown",
+              shotsParsed: shots.length,
+              warnings: ["Too few parsed shots"],
+              sample: sampleRow
+            });
             imp.errors.push(`ShotMarker "${f.name}": block ${gi+1} had too few shots after parsing.`);
             continue;
           }
+
+          // Record detection summary
+          const sampleRow = sampleRowPreview(parsed, headers, 8);
+          imp.diagnostics.push({
+            file: f.name,
+            block: gi+1,
+            kind: "ShotMarker",
+            map: `x="${xCol}" y="${yCol}"`,
+            unit: assumeMM ? "mm" : "unknown",
+            shotsParsed: shots.length,
+            sample: sampleRow
+          });
 
           // Compute metrics in MOA (Vert = vertical extreme spread, MR = mean radius)
           // We treat X/Y as mm unless we think they're inches; convert mm->in.
@@ -2118,6 +2715,7 @@ const t = {
             t.label = nice + (groups.length>1 ? ` — Target ${gi+1}` : "");
           }
           imp.smTargets.push(t);
+          if ((gi % 2) === 1) await tick();
         }
       }catch(err){
         imp.errors.push(`ShotMarker "${f.name}": parse failed (${String(err?.message || err)}).`);
@@ -2276,6 +2874,17 @@ async function handleChronoFiles(files, imp){
         existingKeys.add(k);
 
         const dt = parseDateTimeFromFilename(f.name);
+        if (!imp.diagnostics) imp.diagnostics = [];
+        imp.diagnostics.push({
+          file: f.name,
+          kind: "Chrono",
+          map: usedCol ? `vel="${usedCol}"` : "missing velocity column",
+          unit: "fps",
+          shotsParsed: vals.length,
+          warnings: (!usedCol ? ["Couldn't detect velocity column"] : (vals.length < 5 ? ["Few shots detected"] : [])),
+          sample: (headers || []).slice(0, 10)
+        });
+
         imp.chronoSets.push({
           id: "CH_" + Math.random().toString(16).slice(2),
           fileName: f.name,
@@ -2290,6 +2899,7 @@ async function handleChronoFiles(files, imp){
           timeMs: dt.timeMs || null,
           velCol: usedCol || null
         });
+        await tick();
 
       }catch(e){
         imp.errors.push(`Chrono "${f.name}": ${e.message || e}`);
@@ -2511,10 +3121,12 @@ async function handleChronoFiles(files, imp){
   function clearAll(){
     state.barrels = [{ id:"B1", display:"B1" }];
     state.sessions = [];
+    bumpRev();
     state.selectedBarrelId = "B1";
     state.detailMode = "timeline";
     state.draft = null;
     state.importer = null;
+    toast("Cleared all data.", "warn");
     render();
   }
 
@@ -2620,6 +3232,26 @@ function ensureBarrel(id){
     const lastLabel = (win[0]?.label || win[0]?.sourceFile || "").replace(/\.[^.]+$/,"") || "";
     return { vert, mr, sd, conf, score, trend, last, lastLabel };
   }
+
+  function getAggCached(barrelId){
+    const key = `${state.windowRounds}|${state.showSighters}|${state.rev}`;
+    if (!state._cache) state._cache = { agg: new Map(), aggKey: key };
+    if (state._cache.aggKey !== key){
+      state._cache.aggKey = key;
+      state._cache.agg = new Map();
+    }
+    if (state._cache.agg.has(barrelId)) return state._cache.agg.get(barrelId);
+    const v = aggregate(barrelId);
+    state._cache.agg.set(barrelId, v);
+    return v;
+  }
+
+  function cmp(a,b){
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  }
+
 
   function passesMinConf(conf){
     return (CONF_ORDER[conf] || 1) >= (CONF_ORDER[state.minConf] || 2);
@@ -2754,93 +3386,259 @@ function ensureBarrel(id){
     return { key:"neutral", text:"Neutral" };
   }
 
+  // ---------- Phase 4: Columns / Layouts ----------
+  const COL_META = {
+    idx:   { label:"#",            hideable:false },
+    barrel:{ label:"Barrel",       hideable:false },
+    rank:  { label:"Rank",         hideable:true },
+    conf:  { label:"Confidence",   hideable:true },
+    vert:  { label:"Vert (MOA)",   hideable:true },
+    mr:    { label:"MR (MOA)",     hideable:true },
+    sd:    { label:"SD (fps)",     hideable:true },
+    life:  { label:"Life",         hideable:true },
+    trend: { label:"Trend",        hideable:true },
+    last:  { label:"Last session", hideable:true }
+  };
+
+  const LAYOUT_PRESETS = {
+    Default: { rank:true, conf:true, vert:true, mr:true, sd:true, life:true, trend:true, last:true },
+    Compact: { rank:true, conf:true, vert:true, mr:true, sd:false, life:true, trend:true, last:false },
+    Scoring: { rank:true, conf:true, vert:true, mr:true, sd:true, life:false, trend:true, last:false }
+  };
+
+  function defaultColVis(){ return { ...LAYOUT_PRESETS.Default }; }
+
+  function ensureUi(){
+    if (!state.ui || typeof state.ui !== "object") state.ui = {};
+    if (!state.ui.layout) state.ui.layout = "Default";
+    if (!state.ui.colVis || typeof state.ui.colVis !== "object") state.ui.colVis = defaultColVis();
+  }
+
+  function loadUiPrefs(){
+    try{
+      const raw = localStorage.getItem("BT_UI_V1");
+      if (!raw) return;
+      const p = JSON.parse(raw);
+      if (p && typeof p === "object"){
+        ensureUi();
+        if (p.layout) state.ui.layout = String(p.layout);
+        if (p.colVis && typeof p.colVis === "object"){
+          state.ui.colVis = { ...defaultColVis(), ...p.colVis };
+        }
+      }
+    }catch(e){}
+  }
+  function saveUiPrefs(){
+    try{
+      ensureUi();
+      localStorage.setItem("BT_UI_V1", JSON.stringify({ layout: state.ui.layout, colVis: state.ui.colVis }));
+    }catch(e){}
+  }
+
+  function applyLayout(name){
+    ensureUi();
+    const n = String(name||"Default");
+    if (n === "Custom"){
+      state.ui.layout = "Custom";
+      saveUiPrefs();
+      return;
+    }
+    const preset = LAYOUT_PRESETS[n];
+    if (preset){
+      state.ui.layout = n;
+      state.ui.colVis = { ...defaultColVis(), ...preset };
+      saveUiPrefs();
+    }
+  }
+
+  function visibleColCount(){
+    ensureUi();
+    const v = state.ui.colVis || defaultColVis();
+    let count = 2; // idx + barrel always visible
+    for (const k of ["rank","conf","vert","mr","sd","life","trend","last"]){
+      if (v[k]) count++;
+    }
+    return count;
+  }
+
+  function applyColumnVisibility(){
+    const wrap = $("rankWrap");
+    if (!wrap) return;
+    ensureUi();
+    const v = state.ui.colVis || defaultColVis();
+    for (const k of ["rank","conf","vert","mr","sd","life","trend","last"]){
+      wrap.classList.toggle(`hide-${k}`, !v[k]);
+    }
+  }
+
+  function confTooltip(a){
+    const c = CONF_LABEL[a.conf] || a.conf;
+    const parts = [];
+    if (a.nSessions != null) parts.push(`${a.nSessions} session${a.nSessions===1?"":"s"} in window`);
+    if (a.shotsTotal != null) parts.push(`${a.shotsTotal} shots`);
+    if (a.quality && a.quality.length) parts.push(`Notes: ${a.quality.join(" | ")}`);
+    return `Confidence: ${c}${parts.length ? " • " + parts.join(" • ") : ""}`;
+  }
+  function trendTooltip(a){
+    const t = a.trend === "up" ? "Up" : a.trend === "down" ? "Down" : "Neutral";
+    const dv = (a.dVert != null) ? (a.dVert>0?"+":"") + fmt2(a.dVert) + " MOA vert" : null;
+    const ds = (a.dSD != null) ? (a.dSD>0?"+":"") + fmt0(a.dSD) + " fps SD" : null;
+    const bits = [dv, ds].filter(Boolean);
+    return `Trend: ${t}${bits.length ? " • Δ " + bits.join(", ") : ""}`;
+  }
+
+
 
   function renderRanking(){
     const body = $("rankBody");
+    if (!body) return;
+    ensureUi();
     body.innerHTML = "";
 
-    const rows = state.barrels.map(b => {
-      const agg = aggregate(b.id);
+    const ui = state.ui || { search:"", filter:"all", sort:"rank" };
+    const q = String(ui.search || "").trim().toLowerCase();
+    const filterMode = String(ui.filter || "all");
+    const sortMode = String(ui.sort || "rank");
+
+    const rows = (state.barrels || []).map(b => {
+      const agg = getAggCached(b.id);
       const life = lifeRounds(b.id);
-      return { barrel:b, agg, life };
+      const hasSessions = !!agg;
+      return { barrel:b, agg, life, hasSessions };
     });
 
-    const filtered = rows.filter(r => !r.agg ? true : passesMinConf(r.agg.conf));
+    // search + filter
+    let filtered = rows;
+
+    if (q){
+      filtered = filtered.filter(r => {
+        const hay = `${r.barrel.id} ${r.barrel.display || ""}`.toLowerCase();
+        return hay.includes(q);
+      });
+    }
+
+    if (filterMode === "with"){
+      filtered = filtered.filter(r => r.hasSessions);
+    } else if (filterMode === "needs"){
+      filtered = filtered.filter(r => !r.hasSessions);
+    } else if (filterMode === "lowconf"){
+      filtered = filtered.filter(r => r.agg && r.agg.conf === "low");
+    }
+
+    // min confidence threshold only applies when we have an aggregate
+    filtered = filtered.filter(r => !r.agg ? true : passesMinConf(r.agg.conf));
+
+    // sorting
+    const getSortVal = (r) => {
+      if (sortMode === "conf") return (r.agg ? (CONF_ORDER[r.agg.conf] || 1) : -1);
+      if (sortMode === "vert") return (r.agg ? r.agg.vert : Infinity);
+      if (sortMode === "mr") return (r.agg ? r.agg.mr : Infinity);
+      if (sortMode === "sd") return (r.agg ? r.agg.sd : Infinity);
+      if (sortMode === "life") return (r.life != null ? r.life : -1);
+      if (sortMode === "last") return (r.agg && r.agg.last ? r.agg.last : "");
+      // rank (default): higher score first
+      return (r.agg ? r.agg.score : -Infinity);
+    };
 
     filtered.sort((a,b) => {
-      if (!a.agg && !b.agg) return a.barrel.id.localeCompare(b.barrel.id);
-      if (!a.agg) return 1;
-      if (!b.agg) return -1;
-      return (b.agg.score - a.agg.score);
+      // Prefer barrels with sessions ahead of empty barrels (unless explicitly filtering "needs")
+      if (filterMode !== "needs"){
+        if (!a.agg && !b.agg) return a.barrel.id.localeCompare(b.barrel.id);
+        if (!a.agg) return 1;
+        if (!b.agg) return -1;
+      }
+
+      if (sortMode === "rank"){
+        return (b.agg.score - a.agg.score) || a.barrel.id.localeCompare(b.barrel.id);
+      }
+
+      const av = getSortVal(a);
+      const bv = getSortVal(b);
+      // numbers
+      if (typeof av === "number" && typeof bv === "number"){
+        return (av - bv) || a.barrel.id.localeCompare(b.barrel.id);
+      }
+      // strings
+      return cmp(String(av), String(bv)) || a.barrel.id.localeCompare(b.barrel.id);
     });
 
-    let rank = 0;
-    for (const r of filtered){
-      const agg = r.agg;
+    // Empty state
+    if (!filtered.length){
       const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td colspan="${visibleColCount()}" class="muted" style="padding:16px 12px;">
+          No barrels match your filters. Try clearing search or switching “Show”.
+        </td>
+      `;
+      body.appendChild(tr);
+      return;
+    }
 
-      if (!agg){
-        tr.className = "empty";
-        tr.innerHTML = `
-          <td></td>
-          <td class="barrel">${r.barrel.display}</td>
-          <td class="muted">—</td>
-          <td class="muted">—</td>
-          <td class="muted">—</td>
-          <td class="muted">—</td>
-          <td class="muted">—</td>
-          <td>${r.life}</td>
-          <td class="muted">—</td>
-          <td class="muted">—</td>
-        `;
-      
-        // Allow selecting barrels even when they have no sessions yet
-        tr.addEventListener("click", () => {
-          state.selectedBarrelId = r.barrel.id;
-          state.detailMode = "timeline";
-          state.draft = null;
-          renderDetail();
-          [...body.querySelectorAll("tr")].forEach(x => x.style.outline = "");
-          tr.style.outline = "2px solid rgba(99,102,241,.35)";
-          tr.style.outlineOffset = "-2px";
-        });
-} else {
-        rank += 1;
-        const trendClass = agg.trend === "up" ? "trend up" : (agg.trend === "down" ? "trend down" : "trend flat");
-        const arrow = agg.trend === "up" ? "▲" : (agg.trend === "down" ? "▼" : "▬");
-        tr.className = rowGlowClass(agg.conf);
-        tr.style.boxShadow = glowBoxShadow(agg.conf, agg.last);
-        tr.innerHTML = `
-          <td class="ranknum">${rank}</td>
-          <td class="barrel">${r.barrel.display}</td>
-          <td class="score"><span class="scoreCell" data-barrel="${r.barrel.id}">${agg.score.toFixed(1)}</span></td>
-          <td class="conf ${agg.conf}">${CONF_LABEL[agg.conf] || agg.conf}</td>
-          <td><strong>${agg.vert.toFixed(2)}</strong></td>
-          <td>${agg.mr.toFixed(2)}</td>
-          <td>${agg.sd.toFixed(1)}</td>
-          <td>${r.life}</td>
-          <td class="${trendClass}">
-            <span class="trendwrap">
-              <span class="arrow">${arrow}</span>
-              ${trendSparkSVG(agg.trend)}
-            </span>
-          </td>
-          <td class="lastCol">${renderLastSessionCell(agg)}</td>
-        `;
-
-        tr.addEventListener("click", () => {
-          state.selectedBarrelId = r.barrel.id;
-          state.detailMode = "timeline";
-          state.draft = null;
-          renderDetail();
-          [...body.querySelectorAll("tr")].forEach(x => x.style.outline = "");
-          tr.style.outline = "2px solid rgba(99,102,241,.35)";
-          tr.style.outlineOffset = "-2px";
-        });
+    // render rows
+    for (let i=0;i<filtered.length;i++){
+      const r = filtered[i];
+      const tr = document.createElement("tr");
+      tr.className = "row";
+      const selected = (r.barrel.id === state.selectedBarrelId);
+      if (selected){
+        tr.style.outline = "2px solid rgba(99,102,241,.35)";
+        tr.style.outlineOffset = "-2px";
       }
+
+      if (!r.agg){
+        tr.innerHTML = `
+          <td data-col="idx">${i+1}</td>
+          <td data-col="barrel" class="barrel">${escapeHTML(r.barrel.display)}</td>
+          <td data-col="rank" class="muted">—</td>
+          <td data-col="conf" class="muted">—</td>
+          <td data-col="vert" class="muted">—</td>
+          <td data-col="mr" class="muted">—</td>
+          <td data-col="sd" class="muted">—</td>
+          <td data-col="life">${escapeHTML(String(r.life ?? 0))}</td>
+          <td data-col="trend" class="muted">—</td>
+          <td data-col="last" class="muted">—</td>
+        `;
+      } else {
+        const a = r.agg;
+        
+        
+const confPill = `<span class="pill ${a.conf === "high" ? "good" : a.conf === "mod" ? "mid" : "bad"}">${CONF_LABEL[a.conf] || a.conf}</span>`;
+
+const trendCell = a.trend === "up"
+  ? `<button type="button" class="pill good pillTrend" data-trend="${escapeHTML(r.barrel.id)}">Up</button>`
+  : a.trend === "down"
+    ? `<button type="button" class="pill bad pillTrend" data-trend="${escapeHTML(r.barrel.id)}">Down</button>`
+    : `<button type="button" class="pill muted pillTrend" data-trend="${escapeHTML(r.barrel.id)}">Neutral</button>`;
+
+const confCell = confPill;
+
+        tr.innerHTML = `
+          <td data-col="idx">${i+1}</td>
+          <td data-col="barrel" class="barrel">${escapeHTML(r.barrel.display)}</td>
+          <td data-col="rank"><b>${fmt1(a.score)}</b></td>
+          <td data-col="conf">${confCell}</td>
+          <td data-col="vert">${fmt2(a.vert)}</td>
+          <td data-col="mr">${fmt2(a.mr)}</td>
+          <td data-col="sd">${fmt0(a.sd)}</td>
+          <td data-col="life">${escapeHTML(String(r.life ?? 0))}</td>
+          <td data-col="trend">${trendCell}</td>
+          <td data-col="last" class="lastCol">
+            <div class="lsTop">${escapeHTML(a.last || "—")}</div>
+            <div class="lsSub">${escapeHTML(a.lastLabel || "")}</div>
+          </td>
+        `;
+}
+
+      tr.addEventListener("click", () => {
+        state.selectedBarrelId = r.barrel.id;
+        state.detailMode = "timeline";
+        state.draft = null;
+        render(); // keep ranking + detail in sync
+      });
 
       body.appendChild(tr);
     }
+    applyColumnVisibility();
   }
 
   function renderDetail(){
@@ -2890,6 +3688,8 @@ function ensureBarrel(id){
         if (!b) return;
         state.selectedBarrelId = b.id;
         state.detailMode = "timeline";
+        bumpRev();
+        toast(replace ? "JSON imported (replaced current data)." : "JSON imported (merged with current data).", "success");
         render();
       });
     }
@@ -3163,6 +3963,8 @@ function ensureBarrel(id){
         sourceType: "manual",
         notes: draft.notes
       });
+      bumpRev();
+      toast("Session saved.", "success");
 
       state.detailMode = "timeline";
       state.draft = null;
@@ -3183,6 +3985,7 @@ if (state.detailMode === "import"){
         smTargets: [],    // parsed targets from ShotMarker files
         chronoSets: [],   // parsed velocity sets
         notes: [],       // import notes (collapsed)
+        diagnostics: [], // detected fields + parsing summary
         pairings: {},     // targetId -> chronoId
         errors: [],
         status: ""
@@ -3228,6 +4031,14 @@ if (state.detailMode === "import"){
           <div class="mini" style="margin-top:6px;color:var(--muted);line-height:1.5;">${renderImportNotes(imp.notes)}</div>
         </details>
       ` : ""}
+
+      ${(imp.diagnostics && imp.diagnostics.length) ? `
+        <details class="impNotes" style="margin-top:10px;">
+          <summary style="cursor:pointer;font-weight:800;">Detected fields (summary)</summary>
+          <div class="mini" style="margin-top:6px;color:var(--muted);line-height:1.5;">${renderImportDiagnostics(imp.diagnostics)}</div>
+        </details>
+      ` : ""}
+
       <div class="impGrid">
         <div class="drop" id="dropSM">
           <div class="dropTop">
@@ -3280,7 +4091,7 @@ if (state.detailMode === "import"){
       // re-compute metrics on existing targets
       imp.smTargets = imp.smTargets.map(t => recomputeTargetMetrics(t, imp.distanceYd));
       renderDetail();
-    });
+});
     // quick distance buttons (100/600/1000/1200)
     body.querySelectorAll('button[data-setdist]').forEach(btn => {
       btn.addEventListener("click", () => {
@@ -3336,8 +4147,10 @@ if (state.detailMode === "import"){
 
     $("btnGenerateSessions")?.addEventListener("click", () => {
       generateSessionsFromImport(imp);
+      bumpRev();
       state.detailMode = "timeline";
       state.importer.status = "Sessions generated.";
+      toast("Sessions generated from import.", "success");
       render();
     });
 
@@ -3417,8 +4230,7 @@ if (state.detailMode === "import"){
     renderLabels();
     renderRanking();
     renderDetail();
-
-    // Hide form-window control during Import view (keep only in ranking header)
+// Hide form-window control during Import view (keep only in ranking header)
     const win = $("selWindow");
     if (win) win.style.display = (state.detailMode === "import") ? "none" : "";
   }
@@ -3528,32 +4340,39 @@ if (state.detailMode === "import"){
     s.sourceFile = d.sourceFile;
     s.notes = d.notes;
 
+    bumpRev();
     closeSessionModal();
+    toast("Session updated.", "success");
     render();
   }
 
-  function deleteEditingSession(){
+  async function deleteEditingSession(){
     const sid = _editingSessionId;
     if (!sid) return;
     const s = sessionById(sid);
     if (!s) return;
-    const ok = confirm(`Delete session ${s.id}? This cannot be undone.`);
+    const ok = await confirmDialog(`Delete session ${s.id}? This cannot be undone.`, { title: "Delete session", okText: "Delete", cancelText: "Cancel" });
     if (!ok) return;
     state.sessions = state.sessions.filter(x => x.id !== sid);
+    bumpRev();
     closeSessionModal();
+    toast("Session deleted.", "success");
     render();
   }
 
   function duplicateEditingSession(){
     const sid = _editingSessionId;
+    if (!sid) return;
     const s = sessionById(sid);
     if (!s) return;
-    const nextId = "D" + Math.random().toString(36).slice(2,9).toUpperCase();
+
     const copy = JSON.parse(JSON.stringify(s));
-    copy.id = nextId;
-    copy.label = (copy.label || "").trim() + " (copy)";
+    copy.id = "D" + Math.random().toString(36).slice(2,9).toUpperCase();
+    copy.label = (copy.label ? (copy.label + " (copy)") : "Copy");
     state.sessions.push(copy);
+    bumpRev();
     closeSessionModal();
+    toast("Session duplicated.", "success");
     render();
   }
 
@@ -3589,11 +4408,89 @@ function wire(){
       .chip.impact.neutral{ border-color: rgba(148,163,184,.28); background: rgba(148,163,184,.10); color: rgba(226,232,240,.92); }
       .chip.impact.bad{ border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.12); color: rgba(254,226,226,.95); }
       #guideOverlay{ display:none; }
-    `;
+    
+      /* Phase 4: column visibility */
+      .rankWrap{ overflow:auto; }
+      .rankWrap.hide-rank [data-col="rank"], .rankWrap.hide-rank th[data-col="rank"],
+      .rankWrap.hide-conf [data-col="conf"], .rankWrap.hide-conf th[data-col="conf"],
+      .rankWrap.hide-vert [data-col="vert"], .rankWrap.hide-vert th[data-col="vert"],
+      .rankWrap.hide-mr [data-col="mr"], .rankWrap.hide-mr th[data-col="mr"],
+      .rankWrap.hide-sd [data-col="sd"], .rankWrap.hide-sd th[data-col="sd"],
+      .rankWrap.hide-life [data-col="life"], .rankWrap.hide-life th[data-col="life"],
+      .rankWrap.hide-trend [data-col="trend"], .rankWrap.hide-trend th[data-col="trend"],
+      .rankWrap.hide-last [data-col="last"], .rankWrap.hide-last th[data-col="last"]{ display:none !important; }
+
+                        
+/* Trend popover (click Trend pill) */
+.pillTrend{ cursor:pointer; }
+.pillTrend:focus{ outline: 2px solid rgba(148,163,184,.45); outline-offset: 2px; }
+
+#trendPop{ position:fixed; inset:0; display:none; z-index: 99999; }
+#trendPop.show{ display:block; }
+#trendPop .trendCard{
+  position:fixed;
+  width: 340px;
+  max-width: calc(100vw - 24px);
+  border-radius: 18px;
+  border:1px solid rgba(148,163,184,.24);
+  background: rgba(2,6,23,.94);
+  box-shadow: 0 24px 80px rgba(0,0,0,.55);
+  padding: 14px 14px 12px;
+  color: rgba(226,232,240,.96);
+}
+#trendPop .trendHead{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+#trendPop .trendTitle{ font-size: 22px; font-weight: 900; letter-spacing: .2px; }
+#trendPop .trendClose{
+  border:1px solid rgba(148,163,184,.22);
+  background: rgba(148,163,184,.08);
+  color: rgba(226,232,240,.92);
+  border-radius: 12px;
+  height: 34px;
+  width: 34px;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+}
+#trendPop .trendClose:hover{ background: rgba(148,163,184,.12); }
+
+#trendPop .trendRow{ display:flex; align-items:center; gap:12px; }
+#trendPop .trendIcon{
+  width: 44px; height: 44px;
+  border-radius: 14px;
+  border:1px solid rgba(148,163,184,.22);
+  background: rgba(148,163,184,.08);
+  display:grid; place-items:center;
+  font-weight: 900;
+}
+#trendPop .trendIcon.good{ border-color: rgba(34,197,94,.32); background: rgba(34,197,94,.10); color: rgba(220,252,231,.95); }
+#trendPop .trendIcon.bad{  border-color: rgba(239,68,68,.32); background: rgba(239,68,68,.10); color: rgba(254,226,226,.95); }
+#trendPop .trendIcon.neutral{ border-color: rgba(148,163,184,.26); background: rgba(148,163,184,.08); color: rgba(226,232,240,.92); }
+
+#trendPop .trendSpark{ width: 240px; height: 56px; display:block; }
+#trendPop .sparkPath{ fill:none; stroke: rgba(148,163,184,.85); stroke-width:3; stroke-linecap:round; }
+#trendPop .sparkDot{ fill: rgba(226,232,240,.92); }
+#trendPop .sparkPath.good{ stroke: rgba(34,197,94,.9); }
+#trendPop .sparkPath.bad{  stroke: rgba(239,68,68,.9); }
+#trendPop .sparkPath.neutral{ stroke: rgba(148,163,184,.85); }
+#trendPop .trendText{ margin-top: 10px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+
+/* Columns modal */
+      #colsOverlay{ display:none; }
+      .colsGrid{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; }
+      .colsGrid label{ display:flex; gap:10px; align-items:center; padding:10px; border-radius:12px;
+        border:1px solid rgba(148,163,184,.22); background: rgba(148,163,184,.06); }
+      .colsGrid input{ transform: translateY(1px); }
+      .colsHint{ color: var(--muted); font-size: 12px; margin-top: 8px; }
+`;
     document.head.appendChild(st);
 
+    // Trend details: click the Trend pill to open the trend popover.
+
     wireSessionModal();
-    $("selWindow").addEventListener("change", (e) => {
+    loadUiPrefs();
+    ensureUi();
+    const elSelWindow = $("selWindow");
+    if (elSelWindow) elSelWindow.addEventListener("change", (e) => {
       if (state.rankLocked){
         e.target.value = String(state.lockedWindowRounds ?? state.windowRounds);
         return;
@@ -3601,14 +4498,134 @@ function wire(){
       state.windowRounds = parseInt(e.target.value, 10);
       render();
     });
-    $("selMinConf").addEventListener("change", (e) => {
+const elSelMinConf = $("selMinConf");
+    if (elSelMinConf) elSelMinConf.addEventListener("change", (e) => {
       state.minConf = e.target.value;
       render();
     });
-    $("chkSighters").addEventListener("change", (e) => {
+const elChkSighters = $("chkSighters");
+    if (elChkSighters) elChkSighters.addEventListener("change", (e) => {
       state.showSighters = !!e.target.checked;
       render();
     });
+// Phase 1: search / filter / sort
+    if (!state.ui) state.ui = { search:"", filter:"all", sort:"rank" };
+
+    const inpSearch = $("inpSearch");
+    if (inpSearch){
+      inpSearch.value = state.ui.search || "";
+      inpSearch.addEventListener("input", (e) => {
+        state.ui.search = String(e.target.value || "");
+        renderRanking();
+      });
+      inpSearch.addEventListener("keydown", (e) => {
+        if (e.key === "Escape"){
+          e.preventDefault();
+          e.target.value = "";
+          state.ui.search = "";
+          renderRanking();
+        }
+      });
+    }
+
+    const selFilter = $("selFilter");
+    if (selFilter){
+      selFilter.value = state.ui.filter || "all";
+      selFilter.addEventListener("change", (e) => {
+        state.ui.filter = String(e.target.value || "all");
+        renderRanking();
+      });
+    }
+
+    const selSort = $("selSort");
+    if (selSort){
+      selSort.value = state.ui.sort || "rank";
+      selSort.addEventListener("change", (e) => {
+        state.ui.sort = String(e.target.value || "rank");
+        renderRanking();
+      });
+    }
+
+    // Phase 4: Layout + Columns controls
+    const selLayout = $("selLayout");
+    if (selLayout){
+      selLayout.value = state.ui.layout || "Default";
+      selLayout.addEventListener("change", (e) => {
+        const v = String(e.target.value || "Default");
+        if (v !== "Custom") applyLayout(v);
+        else { ensureUi(); state.ui.layout = "Custom"; saveUiPrefs(); }
+        render();
+      });
+    }
+
+    const colsOverlay = $("colsOverlay");
+    const openCols = () => {
+      if (!colsOverlay) return;
+      ensureUi();
+      // hydrate grid
+      const grid = $("colsGrid");
+      if (grid){
+        const v = state.ui.colVis || defaultColVis();
+        const keys = ["rank","conf","vert","mr","sd","life","trend","last"];
+        grid.innerHTML = keys.map(k => {
+          const checked = !!v[k];
+          const label = COL_META[k]?.label || k;
+          return `<label><input type="checkbox" data-colkey="${k}" ${checked ? "checked" : ""} /> <div><b>${escapeHTML(label)}</b><div style="color:var(--muted);font-size:12px;">Toggle ${escapeHTML(label)}</div></div></label>`;
+        }).join("");
+        grid.querySelectorAll('input[type="checkbox"][data-colkey]').forEach(cb => {
+          cb.addEventListener("change", () => {
+            const key = cb.getAttribute("data-colkey");
+            if (!key) return;
+            ensureUi();
+            state.ui.colVis[key] = !!cb.checked;
+            state.ui.layout = "Custom";
+            saveUiPrefs();
+            applyColumnVisibility();
+          });
+        });
+      }
+      document.body.classList.add("modalOpen");
+      colsOverlay.style.display = "flex";
+      colsOverlay.setAttribute("aria-hidden","false");
+      applyColumnVisibility();
+      // keep layout select in sync
+      if (selLayout) selLayout.value = state.ui.layout || "Custom";
+    };
+    const closeCols = () => {
+      if (!colsOverlay) return;
+      document.body.classList.remove("modalOpen");
+      colsOverlay.style.display = "none";
+      colsOverlay.setAttribute("aria-hidden","true");
+      saveUiPrefs();
+      render();
+    };
+
+    $("btnColumns")?.addEventListener("click", openCols);
+    $("btnColsClose")?.addEventListener("click", closeCols);
+    $("btnColsOk")?.addEventListener("click", closeCols);
+    colsOverlay?.addEventListener("click", (e) => { if (e.target === colsOverlay) closeCols(); });
+    document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") closeCols(); });
+
+    $("btnColsAll")?.addEventListener("click", () => {
+      ensureUi();
+      state.ui.colVis = defaultColVis();
+      state.ui.layout = "Custom";
+      saveUiPrefs();
+      openCols();
+    });
+    $("btnColsCompact")?.addEventListener("click", () => {
+      applyLayout("Compact");
+      if (selLayout) selLayout.value = "Compact";
+      openCols();
+    });
+    $("btnColsReset")?.addEventListener("click", () => {
+      applyLayout("Default");
+      if (selLayout) selLayout.value = "Default";
+      openCols();
+    });
+
+
+
 
         $("btnClear").addEventListener("click", clearAll);
 
@@ -3668,12 +4685,19 @@ function wire(){
     $("btnGuide")?.addEventListener("click", openGuide);
     $("btnGuideClose")?.addEventListener("click", closeGuide);
     $("btnGuideOk")?.addEventListener("click", closeGuide);
+    $("btnSupportBundle")?.addEventListener("click", () => {
+      const bundle = buildSupportBundle();
+      const ymd = (bundle.created_at || new Date().toISOString()).slice(0,10);
+      downloadText(`BarrelTracker_support_${ymd}.json`, JSON.stringify(bundle, null, 2), "application/json");
+      toast("Support bundle exported.", "ok");
+    });
+
     guide?.addEventListener("click", (e) => { if (e.target === guide) closeGuide(); });
     document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") closeGuide(); });
 
     $("btnImportGlobal").addEventListener("click", () => {
       if (!state.selectedBarrelId){
-        alert("Select a barrel row first, then import.");
+        toast("Select a barrel row first, then import.", "warn");
         return;
       }
       openImport(state.selectedBarrelId);
@@ -3698,16 +4722,21 @@ function wire(){
       if (!f) return;
       try{
         const text = await f.text();
-        const payload = JSON.parse(text);
+        const payloadRaw = JSON.parse(text);
+        const payload = migrateExportPayload(payloadRaw);
 
-        // Basic validation
-        const ok = payload && payload.app === "BarrelTracker" && payload.state && Array.isArray(payload.state.barrels) && Array.isArray(payload.state.sessions);
+        // Basic validation (post-migration)
+        const ok = payload && payload.app === "BarrelTracker" && payload.state &&
+          Array.isArray(payload.state.barrels) && Array.isArray(payload.state.sessions);
         if (!ok){
-          alert("That JSON doesn't look like a BarrelTracker export.");
+          toast("That JSON doesn't look like a BarrelTracker export.", "error");
           return;
         }
 
-        const replace = confirm("Import JSON:\n\nOK = REPLACE current barrels + sessions\nCancel = MERGE (keep existing, add/overwrite by id)");
+        const replace = await confirmDialog(
+          "Import JSON:\n\nOK = REPLACE current barrels + sessions\nCancel = MERGE (keep existing, add/overwrite by id)",
+          { title: "Import JSON", okText: "Replace", cancelText: "Merge" }
+        );
         if (replace){
           state.barrels = payload.state.barrels || [];
           state.sessions = payload.state.sessions || [];
@@ -3732,7 +4761,7 @@ function wire(){
         // Restore settings if present
         const set = payload.state.settings || {};
         if (set.windowRounds) state.windowRounds = set.windowRounds;
-        if (set.minConfidence) state.minConfidence = set.minConfidence;
+        if (set.minConf != null || set.minConfidence != null) state.minConf = (set.minConf != null ? set.minConf : set.minConfidence);
         if (typeof set.showSighters === "boolean") state.showSighters = set.showSighters;
 
         // Ensure we have a selected barrel
@@ -3741,9 +4770,11 @@ function wire(){
         }
 
         state.detailMode = "timeline";
+        bumpRev();
+        toast(replace ? "JSON imported (replaced current data)." : "JSON imported (merged with current data).", "success");
         render();
       }catch(err){
-        alert("Import failed: " + String(err && err.message ? err.message : err));
+        toast("Import failed: " + String(err && err.message ? err.message : err), "error");
       }
     });
 
@@ -3787,6 +4818,25 @@ $("btnAddBarrel").addEventListener("click", () => {
       $("inpBarrelTwistCustom").style.display = "none";
       render();
     });
+
+// Trend popover (click Trend pill)
+const rankBody = $("rankBody");
+if (rankBody){
+  rankBody.addEventListener("click", (e) => {
+    const t = (e.target && e.target.nodeType===3) ? e.target.parentElement : e.target;
+    const btn = t?.closest?.(".pillTrend");
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const bid = btn.getAttribute("data-trend");
+    if (!bid) return;
+    openTrendPopover(bid, btn);
+  });
+}
+window.addEventListener("scroll", () => { if (_trendPopOpen) hideTrendPopover(); }, { passive:true, capture:true });
+window.addEventListener("resize", () => { if (_trendPopOpen) hideTrendPopover(); }, { passive:true });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideTrendPopover(); });
+
 }
 
   document.addEventListener("DOMContentLoaded", () => {
