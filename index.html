@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,8 +8,10 @@
 <title>BarrelTracker</title>
 <script>
   // Single source of truth for displayed tool version
-  window.BT_APP = { name: "BarrelTracker", version: "4.5.15", channel: "release" };
+  window.BT_APP = { name: "BarrelTracker", version: "4.5.17", channel: "release", build: "2026-01-03" };
   document.title = `${window.BT_APP.name} — v${window.BT_APP.version}`;
+  // Release build stamp
+  window.BT_APP.tag = `v${window.BT_APP.version}` + (window.BT_APP.build ? ` (${window.BT_APP.build})` : "");
 </script>
 <style>
   :root{
@@ -40,7 +43,7 @@
     color:var(--text);
   }
 
-  
+
   /* ---- Suite unified header (NodeLab-style) ---- */
   .suiteHeader{
     display:flex; align-items:center; justify-content:space-between;
@@ -192,7 +195,7 @@
     color:var(--text);
     font-size:13px;
   }
-  
+
   /* Dark dropdown menus (options list) */
   .select option, .select optgroup{
     background: #0b1227;
@@ -591,21 +594,148 @@ td.lastCol .lsSub{ margin-top:2px; font-size:12px; color:var(--muted); white-spa
   left: 0; top: 0;
   z-index: 99999;
   display: none;
-  max-width: 320px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(15, 23, 42, 0.96);
-  color: rgba(226, 232, 240, 0.92);
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  box-shadow: 0 10px 30px rgba(0,0,0,.45);
+  max-width: 340px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.98), rgba(30, 64, 175, 0.98));
+  color: rgba(255,255,255,0.96);
+  border: 1px solid rgba(191, 219, 254, 0.35);
+  box-shadow: 0 14px 40px rgba(0,0,0,.45);
   font-size: 12.5px;
-  line-height: 1.25;
+  line-height: 1.3;
   pointer-events: none;
   white-space: normal;
 }
 
-
 th[data-tip]{cursor:help;}
+
+
+/* Tiny icon buttons (help) */
+.iconBtn{
+  height: 34px;
+  width: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+  color: rgba(226,232,240,.92);
+  font-weight: 900;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.iconBtn:hover{ background: rgba(255,255,255,.10); }
+
+/* Scope lock chip */
+.lockChip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin-left: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: rgba(226,232,240,.92);
+}
+.lockChip b{ font-weight: 900; }
+
+/* Toast action button */
+.toast .tActions{ display:flex; gap:10px; margin-top:10px; align-items:center; }
+.toast .tAction{
+  border-radius: 10px;
+  padding: 6px 10px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.08);
+  color: rgba(226,232,240,.92);
+  cursor:pointer;
+  font-weight: 800;
+}
+.toast .tAction:hover{ background: rgba(255,255,255,.12); }
+
+/* Command palette (Ctrl/Cmd+K) */
+.cmdkOverlay{
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 10vh;
+  z-index: 99998;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(6px);
+}
+.cmdkCard{
+  width: min(720px, calc(100vw - 24px));
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(2, 6, 23, 0.92);
+  box-shadow: 0 20px 70px rgba(0,0,0,.65);
+  overflow: hidden;
+}
+.cmdkTop{
+  padding: 14px 14px 10px 14px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+.cmdkInput{
+  width: 100%;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+  color: rgba(226,232,240,.92);
+  padding: 0 12px;
+  outline: none;
+}
+.cmdkList{ max-height: 360px; overflow:auto; padding: 8px; }
+.cmdkItem{
+  display:flex;
+  justify-content: space-between;
+  align-items:center;
+  gap:10px;
+  padding: 10px 10px;
+  border-radius: 12px;
+  cursor:pointer;
+}
+.cmdkItem:hover, .cmdkItem[aria-selected="true"]{ background: rgba(255,255,255,.08); }
+.cmdkKbd{
+  font-size: 12px;
+  opacity: .8;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  padding: 4px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+/* Import stepper */
+.impStepper{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin: 10px 0 12px 0;
+}
+.impStep{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+  color: rgba(226,232,240,.92);
+  font-size: 12px;
+  font-weight: 900;
+}
+.impStep[data-state="todo"]{ opacity:.65; }
+.impStep[data-state="doing"]{ border-color: rgba(191,219,254,.35); }
+.impStep[data-state="done"]{ border-color: rgba(34,197,94,.45); }
+
 </style>
 </head>
 <body>
@@ -626,6 +756,7 @@ th[data-tip]{cursor:help;}
       <div class="suiteHeader__pill">Sighters count toward rounds</div>
       <button id="btnClear" class="btn">Clear</button>
       <button id="btnLockScope" class="btn">Lock scope</button>
+      <span id="scopeLockChip" class="lockChip" data-tip=""></span>
       <button id="btnGuide" class="btn">Guide</button>
     </div>
     <div class="suiteHeader__badge" title="BarrelTracker">
@@ -668,20 +799,22 @@ th[data-tip]{cursor:help;}
             <option value="life">Sort: Life</option>
             <option value="last">Sort: Last</option>
           </select>
-          <select id="selLayout" class="select" title="Column layout">
+          <select id="selLayout" class="select" data-tip="Column layout preset">
             <option value="Default" selected>Layout: Default</option>
             <option value="Compact">Layout: Compact</option>
             <option value="Scoring">Layout: Scoring</option>
             <option value="Custom">Layout: Custom</option>
           </select>
-          <button class="btn" id="btnColumns" title="Choose which columns to show">Columns</button>
+          <button class="btn" id="btnResetView" data-tip="Reset search, filters, sort, layout and scope to defaults">Reset view</button>
+          <button class="btn" id="btnColumns" data-tip="Choose which columns to show">Columns</button>
           <label class="toggle"><input id="chkSighters" type="checkbox" checked /> Show sighters</label>
           <button class="btn primary" id="btnImportGlobal">Import</button>
           <button class="btn" id="btnImportJSON">Import JSON</button>
           <button class="btn" id="btnExport">Export</button>
+          <button class="iconBtn" id="btnQuickHelp" aria-label="Help" data-tip="Help • Shortcuts (? / Ctrl+K)">?</button>
           <input id="fileImportJSON" type="file" accept=".json,application/json" style="display:none" />
           <button class="btn" id="btnAddBarrel">+ Barrel</button>
-        
+
       <!-- + Barrel popover -->
       <div id="barrelPop" class="pop" style="display:none;">
         <div class="popHead">Add barrel</div>
@@ -753,7 +886,7 @@ th[data-tip]{cursor:help;}
         </div>
       </div>
 
-      
+
 
     </div>
 
@@ -856,7 +989,7 @@ th[data-tip]{cursor:help;}
 
 <script>
 (() => {
-  const APP = (window.BT_APP && typeof window.BT_APP === "object") ? window.BT_APP : { name:"BarrelTracker", version: "4.5.15" };
+  const APP = (window.BT_APP && typeof window.BT_APP === "object") ? window.BT_APP : { name:"BarrelTracker", version: "4.5.17" };
   const APP_VERSION_TAG = `v${APP.version}`;
 
   const SCHEMA_VERSION = 3; // export/import schema (migrations supported)
@@ -876,30 +1009,370 @@ th[data-tip]{cursor:help;}
     return host;
   }
 
-  function toast(msg, kind="success", title=null, ms=3600){
+  function toast(msg, kind="success", title=null, ms=3600, opts=null){
     try{
       const host = ensureToastHost();
       const el = document.createElement("div");
       el.className = "toast";
       el.dataset.kind = kind;
       const safeTitle = title || (kind==="error" ? "Error" : kind==="warn" ? "Heads up" : "Done");
+
+      const hasAction = !!(opts && typeof opts === "object" && opts.actionLabel && typeof opts.onAction === "function");
       el.innerHTML = `
         <div class="tTop">
           <div class="tTitle">${escapeHTML(safeTitle)}</div>
           <button class="tClose" aria-label="Dismiss">✕</button>
         </div>
         <div class="tMsg">${escapeHTML(String(msg||""))}</div>
+        ${hasAction ? `<div class="tActions"><button class="tAction" type="button">${escapeHTML(String(opts.actionLabel))}</button></div>` : ``}
       `;
       el.querySelector(".tClose").addEventListener("click", () => el.remove());
+
+      if (hasAction){
+        el.querySelector(".tAction")?.addEventListener("click", () => {
+          try{ opts.onAction(); }catch(e){ console.warn(e); }
+          try{ el.remove(); }catch{}
+        });
+      }
+
       host.appendChild(el);
       if (ms > 0){
         setTimeout(() => { try{ el.remove(); }catch{} }, ms);
       }
+      return el;
     }catch{
-      // last resort
-      console.log(`[${kind}] ${msg}`);
+      // last resort (release build: avoid console noise)
+      return null;
     }
   }
+
+  // ---------- UX helpers (vNext polish) ----------
+  const AUTOSAVE_KEY = "BT_DATA_V1";
+  let _autosaveTimer = null;
+
+  function deepClone(obj){
+    try{
+      if (typeof structuredClone === "function") return structuredClone(obj);
+    }catch{}
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  function snapshotAppState(){
+    // Include everything needed for undo operations & restore.
+    return deepClone({
+      barrels: state.barrels,
+      sessions: state.sessions,
+      selectedBarrelId: state.selectedBarrelId,
+      windowRounds: state.windowRounds,
+      minConf: state.minConf,
+      showSighters: state.showSighters,
+      ui: state.ui,
+      rankLocked: state.rankLocked,
+      lockedWindowRounds: state.lockedWindowRounds,
+      lockedAtISO: state.lockedAtISO,
+      detailMode: state.detailMode,
+      importer: state.importer,
+      draft: state.draft
+    });
+  }
+
+  function restoreAppState(snap){
+    if (!snap || typeof snap !== "object") return;
+    state.barrels = Array.isArray(snap.barrels) ? snap.barrels : state.barrels;
+    state.sessions = Array.isArray(snap.sessions) ? snap.sessions : state.sessions;
+    state.selectedBarrelId = snap.selectedBarrelId ?? state.selectedBarrelId;
+    state.windowRounds = Number.isFinite(snap.windowRounds) ? snap.windowRounds : state.windowRounds;
+    state.minConf = snap.minConf || state.minConf;
+    state.showSighters = (typeof snap.showSighters === "boolean") ? snap.showSighters : state.showSighters;
+    state.ui = (snap.ui && typeof snap.ui === "object") ? snap.ui : state.ui;
+    state.rankLocked = !!snap.rankLocked;
+    state.lockedWindowRounds = snap.lockedWindowRounds ?? null;
+    state.lockedAtISO = snap.lockedAtISO ?? null;
+    state.detailMode = snap.detailMode || "timeline";
+    state.importer = snap.importer ?? null;
+    state.draft = snap.draft ?? null;
+    bumpRev();
+    render();
+  }
+
+  function buildAutosavePayload(){
+    return {
+      v: 1,
+      savedAtISO: new Date().toISOString(),
+      barrels: state.barrels,
+      sessions: state.sessions,
+      selectedBarrelId: state.selectedBarrelId,
+      windowRounds: state.windowRounds,
+      minConf: state.minConf,
+      showSighters: state.showSighters,
+      ui: state.ui,
+      rankLocked: state.rankLocked,
+      lockedWindowRounds: state.lockedWindowRounds,
+      lockedAtISO: state.lockedAtISO
+    };
+  }
+
+  function writeAutosave(){
+    try{
+      const payload = buildAutosavePayload();
+      localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(payload));
+    }catch(e){
+      // ignore
+    }
+  }
+
+  function scheduleAutosave(){
+    try{
+      clearTimeout(_autosaveTimer);
+      _autosaveTimer = setTimeout(writeAutosave, 650);
+    }catch{}
+  }
+
+  function readAutosaveMeta(){
+    try{
+      const raw = localStorage.getItem(AUTOSAVE_KEY);
+      if (!raw) return null;
+      const p = JSON.parse(raw);
+      if (!p || typeof p !== "object") return null;
+      const barrels = Array.isArray(p.barrels) ? p.barrels.length : 0;
+      const sessions = Array.isArray(p.sessions) ? p.sessions.length : 0;
+      return {
+        savedAtISO: p.savedAtISO || null,
+        barrels,
+        sessions
+      };
+    }catch{
+      return null;
+    }
+  }
+
+  function applyAutosave(){
+    try{
+      const raw = localStorage.getItem(AUTOSAVE_KEY);
+      if (!raw) return false;
+      const p = JSON.parse(raw);
+      if (!p || typeof p !== "object") return false;
+
+      // Apply safe fields only
+      state.barrels = Array.isArray(p.barrels) ? p.barrels : state.barrels;
+      state.sessions = Array.isArray(p.sessions) ? p.sessions : state.sessions;
+      state.selectedBarrelId = p.selectedBarrelId ?? state.selectedBarrelId;
+      state.windowRounds = Number.isFinite(p.windowRounds) ? p.windowRounds : state.windowRounds;
+      state.minConf = p.minConf || state.minConf;
+      state.showSighters = (typeof p.showSighters === "boolean") ? p.showSighters : state.showSighters;
+      state.ui = (p.ui && typeof p.ui === "object") ? p.ui : state.ui;
+      state.rankLocked = !!p.rankLocked;
+      state.lockedWindowRounds = p.lockedWindowRounds ?? null;
+      state.lockedAtISO = p.lockedAtISO ?? null;
+
+      // Clear transient UI
+      state.detailMode = "timeline";
+      state.importer = null;
+      state.draft = null;
+
+      bumpRev();
+      return true;
+    }catch{
+      return false;
+    }
+  }
+
+  function clearAutosave(){
+    try{ localStorage.removeItem(AUTOSAVE_KEY); }catch{}
+  }
+
+  async function maybeOfferRestoreAutosave(){
+    const meta = readAutosaveMeta();
+    if (!meta || !(meta.barrels || meta.sessions)) return;
+
+    const when = meta.savedAtISO ? new Date(meta.savedAtISO).toLocaleString() : "recently";
+    const ok = await confirmDialog(
+      `Restore your last autosave from ${when}?\n\nBarrels: ${meta.barrels}\nSessions: ${meta.sessions}\n\n(You can also ignore this and continue.)`,
+      { title: "Restore autosave?", okText: "Restore", cancelText: "Not now" }
+    );
+
+    if (ok){
+      const did = applyAutosave();
+      if (did){
+        toast("Autosave restored.", "success", "Restored", 5200, { actionLabel:"Forget autosave", onAction: clearAutosave });
+      }else{
+        toast("Couldn’t restore autosave.", "error");
+      }
+    }
+  }
+
+  function purgeNativeTooltips(root=document){
+    try{
+      const els = root.querySelectorAll("[title]");
+      els.forEach(el => {
+        const title = (el.getAttribute("title") || "").trim();
+        if (!title) { el.removeAttribute("title"); return; }
+        if (!el.getAttribute("data-tip")) el.setAttribute("data-tip", title);
+        el.removeAttribute("title");
+      });
+    }catch{}
+  }
+
+  function resetView(){
+    // Ranking defaults
+    state.windowRounds = 400;
+    state.minConf = "mod";
+    state.showSighters = true;
+
+    // UI defaults
+    ensureUi();
+    state.ui.search = "";
+    state.ui.filter = "all";
+    state.ui.sort = "rank";
+    state.ui.layout = "Default";
+    state.ui.colVis = defaultColVis();
+    saveUiPrefs();
+
+    // Scope lock off
+    state.rankLocked = false;
+    state.lockedWindowRounds = null;
+    state.lockedAtISO = null;
+
+    // Sync controls
+    const sw = $("selWindow"); if (sw) { sw.value = "400"; sw.disabled = false; }
+    const mc = $("selMinConf"); if (mc) mc.value = "mod";
+    const ss = $("chkSighters"); if (ss) ss.checked = true;
+    const se = $("inpSearch"); if (se) se.value = "";
+    const sf = $("selFilter"); if (sf) sf.value = "all";
+    const so = $("selSort"); if (so) so.value = "rank";
+    const sl = $("selLayout"); if (sl) sl.value = "Default";
+
+    render();
+    toast("View reset to defaults.", "success");
+  }
+
+  function isTypingContext(){
+    const a = document.activeElement;
+    if (!a) return false;
+    const tag = (a.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || tag === "select") return true;
+    if (a.isContentEditable) return true;
+    return false;
+  }
+
+  // Command palette
+  let _cmdkItems = [];
+  let _cmdkIndex = 0;
+
+  function getCmdkOverlay(){ return $("cmdkOverlay"); }
+  function getCmdkInput(){ return $("cmdkInput"); }
+  function getCmdkList(){ return $("cmdkList"); }
+
+  function buildCmdkItems(){
+    const hasAutosave = !!readAutosaveMeta();
+    return [
+      { id:"focusSearch", label:"Focus search", kbd:"/", run:() => $("inpSearch")?.focus?.() },
+      { id:"resetView", label:"Reset view to defaults", kbd:"", run: resetView },
+      { id:"guide", label:"Open guide", kbd:"?", run: () => $("btnGuide")?.click?.() },
+      { id:"import", label:"Import for selected barrel", kbd:"I", run: () => openImport(state.selectedBarrelId) },
+      { id:"manual", label:"Add manual session", kbd:"M", run: () => openAddSession(state.selectedBarrelId) },
+      { id:"scope", label: state.rankLocked ? "Unlock scope" : "Lock scope", kbd:"L", run: () => $("btnLockScope")?.click?.() },
+      ...(hasAutosave ? [{ id:"restoreAutosave", label:"Restore autosave…", kbd:"", run: async () => { await maybeOfferRestoreAutosave(); render(); } }] : []),
+      ...(hasAutosave ? [{ id:"forgetAutosave", label:"Forget autosave", kbd:"", run: () => { clearAutosave(); toast("Autosave cleared.", "warn"); } }] : []),
+    ];
+  }
+
+  function openCmdk(){
+    const ov = getCmdkOverlay();
+    if (!ov) return;
+    _cmdkItems = buildCmdkItems();
+    _cmdkIndex = 0;
+    ov.style.display = "flex";
+    const inp = getCmdkInput();
+    if (inp){ inp.value = ""; setTimeout(() => inp.focus(), 0); }
+    renderCmdk();
+  }
+
+  function closeCmdk(){
+    const ov = getCmdkOverlay();
+    if (!ov) return;
+    ov.style.display = "none";
+  }
+
+  function renderCmdk(){
+    const list = getCmdkList();
+    const inp = getCmdkInput();
+    if (!list || !inp) return;
+    const q = (inp.value || "").trim().toLowerCase();
+    const items = _cmdkItems.filter(it => !q || it.label.toLowerCase().includes(q));
+    if (_cmdkIndex >= items.length) _cmdkIndex = Math.max(0, items.length - 1);
+
+    list.innerHTML = items.length ? items.map((it, idx) => `
+      <div class="cmdkItem" role="option" aria-selected="${idx===_cmdkIndex}" data-id="${escapeHTML(it.id)}">
+        <div>${escapeHTML(it.label)}</div>
+        ${it.kbd ? `<div class="cmdkKbd">${escapeHTML(it.kbd)}</div>` : `<div class="cmdkKbd" style="opacity:.35;">&nbsp;</div>`}
+      </div>
+    `).join("") : `<div class="mini" style="padding:10px;color:var(--muted);">No matches</div>`;
+
+    list.querySelectorAll(".cmdkItem").forEach((row, idx) => {
+      row.addEventListener("click", async () => {
+        const id = row.getAttribute("data-id");
+        const it = items.find(x => x.id === id);
+        closeCmdk();
+        if (it) await it.run();
+      });
+    });
+  }
+
+  async function runCmdkSelected(){
+    const inp = getCmdkInput();
+    if (!inp) return;
+    const q = (inp.value || "").trim().toLowerCase();
+    const items = _cmdkItems.filter(it => !q || it.label.toLowerCase().includes(q));
+    const it = items[_cmdkIndex];
+    closeCmdk();
+    if (it) await it.run();
+  }
+
+  function initCmdk(){
+    const ov = getCmdkOverlay();
+    const inp = getCmdkInput();
+    if (!ov || !inp) return;
+
+    ov.addEventListener("mousedown", (e) => {
+      if (e.target === ov) closeCmdk();
+    });
+
+    inp.addEventListener("input", renderCmdk);
+    inp.addEventListener("keydown", async (e) => {
+      const list = getCmdkList();
+      if (e.key === "Escape"){ e.preventDefault(); closeCmdk(); return; }
+      if (e.key === "ArrowDown"){ e.preventDefault(); _cmdkIndex++; renderCmdk(); list?.scrollBy?.({ top: 48, behavior:"smooth" }); return; }
+      if (e.key === "ArrowUp"){ e.preventDefault(); _cmdkIndex--; if (_cmdkIndex < 0) _cmdkIndex = 0; renderCmdk(); list?.scrollBy?.({ top: -48, behavior:"smooth" }); return; }
+      if (e.key === "Enter"){ e.preventDefault(); await runCmdkSelected(); return; }
+    });
+  }
+
+  // Import stepper helper
+  function updateImportStepper(imp){
+    const host = $("impStepper");
+    if (!host || !imp) return;
+
+    const smDone = !!(imp.smTargets && imp.smTargets.length);
+    const chDone = !!(imp.chronoSets && imp.chronoSets.length);
+
+    const tCount = (imp.smTargets || []).length;
+    const pairings = imp.pairings || {};
+    const pairedCount = (imp.smTargets || []).filter(t => pairings[t.id]).length;
+    const pairDone = (tCount > 0) && (pairedCount === tCount);
+
+    const genDone = !!(imp.generatedAtISO);
+
+    const step = (label, state) => `<span class="impStep" data-state="${state}">${label}</span>`;
+    host.innerHTML = [
+      step(`${smDone ? "✓" : "•"} ShotMarker`, smDone ? "done" : "todo"),
+      step(`${chDone ? "✓" : "•"} Chrono`, chDone ? "done" : "todo"),
+      step(`${pairDone ? "✓" : "•"} Pair (${pairedCount}/${tCount || 0})`, (pairDone ? "done" : (smDone && chDone ? "doing" : "todo"))),
+      step(`${genDone ? "✓" : "•"} Generate`, genDone ? "done" : (pairDone ? "doing" : "todo")),
+    ].join("");
+  }
+
+
 
   function ensureConfirmUI(){
     let ov = $id("confirmOverlay");
@@ -968,6 +1441,8 @@ th[data-tip]{cursor:help;}
     state.rev = (state.rev||0) + 1;
     // cache invalidation
     if (state._cache && state._cache.agg) state._cache.agg.clear();
+    // autosave (debounced)
+    scheduleAutosave();
   }
 
 
@@ -1036,16 +1511,16 @@ importer: null
 const RANK_W = Object.freeze({ vert: 60, mr: 20, sd: 1.2 });
 const CONF_MULT = Object.freeze({ high: 1.00, mod: 0.90, low: 0.78 });
 
-  
+
 
   const $ = (id) => document.getElementById(id);
 
-  
+
   // Number formatting helpers (defensive)
   const _NF0 = new Intl.NumberFormat(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   const _NF1 = new Intl.NumberFormat(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const _NF2 = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  
+
   function _num(x){
     const v = (x === null || x === undefined || x === "") ? NaN : Number(x);
     return Number.isFinite(v) ? v : null;
@@ -1053,8 +1528,8 @@ const CONF_MULT = Object.freeze({ high: 1.00, mod: 0.90, low: 0.78 });
   function fmt0(x){ const v = _num(x); return v === null ? "—" : _NF0.format(v); }
   function fmt1(x){ const v = _num(x); return v === null ? "—" : _NF1.format(v); }
   function fmt2(x){ const v = _num(x); return v === null ? "—" : _NF2.format(v); }
-  
-  
+
+
   function fmtDateShort(iso){
     const d = new Date(iso + "T00:00:00");
     return d.toLocaleDateString(undefined, { month:"short", day:"2-digit" });
@@ -1079,9 +1554,9 @@ const CONF_MULT = Object.freeze({ high: 1.00, mod: 0.90, low: 0.78 });
   }
 
 
-  
 
-  
+
+
 function summarizeImportErrors(errs, maxLines){
     const max = maxLines ?? 6;
     const buckets = new Map();
@@ -1111,7 +1586,7 @@ function summarizeImportErrors(errs, maxLines){
   }
 
 
-  
+
 // Trend popover (click Trend mini)
 let _trendPopOpen = false;
 
@@ -1328,7 +1803,7 @@ function renderImportNotes(notes){
     };
   }
 
-  
+
   function buildSupportBundle(){
     const payload = buildExportPayload();
     return {
@@ -1428,7 +1903,7 @@ function migrateExportPayload(payload){
     });
   }
 
-  
+
   function extractDistanceYdFromShotMarker(text){
     const raw = String(text||"").replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n");
     const scanMax = Math.min(raw.length, 120);
@@ -1530,7 +2005,7 @@ function parseCSV(text){
 
   // ShotMarker "shotslog" exports can contain multiple target blocks (sessions/strings).
   // We split them into per-target groups so they can pair 1:1 with chrono files.
-  
+
   // --- Robust Target/Relay detector for ShotMarker exports (R1/R2/R3 etc) ---
     // --- Robust Target/Relay detector for ShotMarker exports (prefers ~equal-size groups like 22-shot strings) ---
   function guessTargetColumn(headers, rows){
@@ -1751,8 +2226,8 @@ function parseShotMarkerMulti(text, filename){
     }
     if (cur) blocks.push(cur);
 
-    
-    
+
+
     // If we detected one or more session blocks, ShotMarker can still contain multiple targets within a block.
     // In that case, split rows by Target-like column so targets can pair 1:1 with chrono files.
     if (blocks.length){
@@ -1920,12 +2395,12 @@ return blocks
 
 
 
-  
+
   // --- Minimal XLS (BIFF8) reader for Garmin-style chrono exports (.xls) ---
   // This is NOT a full Excel engine. It extracts the first worksheet as a simple table
   // and is tuned for small, single-sheet exports (like Garmin "Rifle_Bullet_*.xls").
   // It supports common cell types: NUMBER, RK, MULRK, LABELSST (via SST), and inline LABEL.
-  
+
   // --- Robust XLS (BIFF8) reader for Garmin-style chrono exports (.xls) ---
   // Purpose-built: extracts FIRST worksheet into a simple table of strings.
   // Supports the Garmin chrono exports we've seen (strings stored via SST + LABELSST).
@@ -2740,7 +3215,7 @@ function parseDateTimeFromFilename(name){
           const vertMOA = vertIn * moaPerIn;
           const mrMOA = mrIn * moaPerIn;
 
-          
+
           const isSighters = detectSightersFromShotMarkerBlock({ label: g.label || f.name, fileName: f.name, headers, rows: parsed.rows });
 const t = {
             id: `SM_${slugify(f.name)}_${gi+1}`,
@@ -2789,7 +3264,7 @@ const t = {
     imp.status = imp.smTargets.length ? "ShotMarker targets parsed." : imp.status;
   }
 
-  
+
 async function handleChronoFiles(files, imp){
     imp.errors = imp.errors || [];
     imp.notes = Array.isArray(imp.notes) ? imp.notes : [];
@@ -3043,7 +3518,7 @@ async function handleChronoFiles(files, imp){
     const sd = (c.sd||0).toFixed(1);
     const es = (c.es||0).toFixed(0);
     return `${c.shotsTotal||0} vels · Avg ${avg} · SD ${sd} · ES ${es}`;
-  
+
 
     imp.notes = Array.isArray(imp.notes) ? imp.notes : [];
     if (pairedTime) imp.notes.push(`Auto-paired ${pairedTime} target${pairedTime===1?"":"s"} by timestamp.`);
@@ -3176,18 +3651,18 @@ async function handleChronoFiles(files, imp){
 
     // push and re-render
     state.sessions.push(...created);
-  }
+    imp.generatedCount = created.length;
+    imp.generatedAtISO = new Date().toISOString();
+}
 
   function clearAll(){
     state.barrels = [{ id:"B1", display:"B1" }];
     state.sessions = [];
-    bumpRev();
     state.selectedBarrelId = "B1";
     state.detailMode = "timeline";
     state.draft = null;
     state.importer = null;
-    toast("Cleared all data.", "warn");
-    render();
+    bumpRev();
   }
 
 
@@ -4029,7 +4504,7 @@ tr.innerHTML = `
   }
 
 
-  
+
 if (state.detailMode === "import"){
     if (!state.importer || state.importer.barrelId !== id){
       state.importer = {
@@ -4052,6 +4527,8 @@ if (state.detailMode === "import"){
       <div class="mini" style="margin-bottom:10px;color:var(--muted);">
         Import creates <b>session rows</b> for this barrel. Everything stays local in your browser.
       </div>
+
+      <div class="impStepper" id="impStepper"></div>
 
       <div class="kpis" style="margin-bottom:12px;">
         <div class="kpi">
@@ -4087,8 +4564,8 @@ if (state.detailMode === "import"){
       ` : ""}
 
       ${(imp.diagnostics && imp.diagnostics.length) ? `
-        <details class="impNotes" style="margin-top:10px;">
-          <summary style="cursor:pointer;font-weight:800;">Detected fields (summary)</summary>
+        <details class="impNotes" open style="margin-top:10px;">
+          <summary style="cursor:pointer;font-weight:900;">Detected fields</summary>
           <div class="mini" style="margin-top:6px;color:var(--muted);line-height:1.5;">${renderImportDiagnostics(imp.diagnostics)}</div>
         </details>
       ` : ""}
@@ -4181,22 +4658,51 @@ if (state.detailMode === "import"){
     wireDropZone($("dropSM"), async (files) => { await handleShotMarkerFiles(files, imp); renderDetail(); });
     wireDropZone($("dropCH"), async (files) => { await handleChronoFiles(files, imp); renderDetail(); });
 
-    $("btnClearImport")?.addEventListener("click", () => {
-      state.importer = { barrelId:id, distanceYd: imp.distanceYd || 1000, smTargets:[], chronoSets:[], pairings:{}, errors:[], status:"" };
+    $("btnClearImport")?.addEventListener("click", async () => {
+      const snap = deepClone(state.importer);
+      const ok = await confirmDialog(
+        "Clear the current import (targets, chronos, pairings, notes)?",
+        { title: "Clear import", okText: "Clear", cancelText: "Cancel" }
+      );
+      if (!ok) return;
+
+      state.importer = { barrelId:id, distanceYd: (imp.distanceYd || 1000), smTargets:[], chronoSets:[], pairings:{}, errors:[], notes:[], diagnostics:[], status:"" };
       renderDetail();
+
+      toast("Import cleared.", "warn", "Cleared", 6500, {
+        actionLabel: "Undo",
+        onAction: () => { state.importer = snap; renderDetail(); }
+      });
     });
 
-    $("btnClearChronos")?.addEventListener("click", () => {
+    $("btnClearChronos")?.addEventListener("click", async () => {
+      const snap = deepClone({ chronoSets: imp.chronoSets, pairings: imp.pairings, errors: imp.errors, status: imp.status });
+      const ok = await confirmDialog(
+        "Clear chrono files only? (ShotMarker targets will stay.)",
+        { title: "Clear chronos", okText: "Clear", cancelText: "Cancel" }
+      );
+      if (!ok) return;
+
       // Keep ShotMarker targets + distance; wipe chronos + any pairings.
       imp.chronoSets = [];
       imp.pairings = {};
       imp.errors = imp.errors || [];
       imp.status = "Chronos cleared.";
       renderDetail();
+
+      toast("Chronos cleared.", "warn", "Cleared", 6500, {
+        actionLabel: "Undo",
+        onAction: () => {
+          imp.chronoSets = snap.chronoSets || [];
+          imp.pairings = snap.pairings || {};
+          imp.errors = snap.errors || [];
+          imp.status = snap.status || "";
+          renderDetail();
+        }
+      });
     });
 
-
-    // render lists + pairings
+// render lists + pairings
     renderImportListsAndPairings(imp);
 
     $("btnGenerateSessions")?.addEventListener("click", () => {
@@ -4207,6 +4713,10 @@ if (state.detailMode === "import"){
       toast("Sessions generated from import.", "success");
       render();
     });
+
+    // stepper + tooltip cleanup
+    updateImportStepper(imp);
+    purgeNativeTooltips(body);
 
     return;
   }
@@ -4272,12 +4782,30 @@ if (state.detailMode === "import"){
 
     // Phase 4: scope lock UI
     const btnLock = $("btnLockScope");
+    const chip = $("scopeLockChip");
+    const lockedWhen = state.lockedAtISO ? new Date(state.lockedAtISO).toLocaleString() : "";
+    const lockedRounds = (state.lockedWindowRounds ?? state.windowRounds);
+
     if (btnLock){
       btnLock.textContent = state.rankLocked ? "Unlock scope" : "Lock scope";
-      btnLock.title = state.rankLocked
-        ? `Rankings frozen at ${state.lockedWindowRounds} rds (locked ${state.lockedAtISO ? new Date(state.lockedAtISO).toLocaleString() : ""})`
+      const tip = state.rankLocked
+        ? `Rankings frozen at ${lockedRounds} rds${lockedWhen ? " ("+lockedWhen+")" : ""}.\n\nTip: Unlock to change the Form window.`
         : "Freeze rankings to prevent accidental scope changes mid-match";
+      btnLock.setAttribute("data-tip", tip);
     }
+
+    if (chip){
+      if (state.rankLocked){
+        chip.style.display = "inline-flex";
+        chip.innerHTML = `🔒 <b>Locked</b> @ ${lockedRounds} rds`;
+        chip.setAttribute("data-tip", `Scope is locked. Rankings won’t change if you bump the window.\nLocked at: ${lockedWhen || "(time unknown)"}.`);
+      }else{
+        chip.style.display = "inline-flex";
+        chip.innerHTML = `🔓 <b>Live</b>`;
+        chip.setAttribute("data-tip", "Scope is live. Rankings update when you change the Form window.");
+      }
+    }
+
     if (sw){
       sw.disabled = !!state.rankLocked;
       if (state.rankLocked) sw.value = String(state.lockedWindowRounds ?? state.windowRounds);
@@ -4289,12 +4817,16 @@ if (state.detailMode === "import"){
     renderLabels();
     renderRanking();
     renderDetail();
-// Hide form-window control during Import view (keep only in ranking header)
+
+    // Hide form-window control during Import view (keep only in ranking header)
     const win = $("selWindow");
     if (win) win.style.display = (state.detailMode === "import") ? "none" : "";
+
+    // Kill native title-tooltips (use our blue tooltips everywhere)
+    purgeNativeTooltips(document);
   }
 
-  
+
   // ---- Session Edit Modal ----
   let _editingSessionId = null;
 
@@ -4410,12 +4942,30 @@ if (state.detailMode === "import"){
     if (!sid) return;
     const s = sessionById(sid);
     if (!s) return;
-    const ok = await confirmDialog(`Delete session ${s.id}? This cannot be undone.`, { title: "Delete session", okText: "Delete", cancelText: "Cancel" });
+
+    const ok = await confirmDialog(
+      `Delete session ${s.id}? This will remove it from this barrel’s timeline and rankings.`,
+      { title: "Delete session", okText: "Delete", cancelText: "Cancel" }
+    );
     if (!ok) return;
+
+    const idx = state.sessions.findIndex(x => x.id === sid);
+    const removed = deepClone(s);
+
     state.sessions = state.sessions.filter(x => x.id !== sid);
     bumpRev();
     closeSessionModal();
-    toast("Session deleted.", "success");
+
+    toast("Session deleted.", "success", "Deleted", 6000, {
+      actionLabel: "Undo",
+      onAction: () => {
+        if (idx >= 0 && idx <= state.sessions.length) state.sessions.splice(idx, 0, removed);
+        else state.sessions.push(removed);
+        bumpRev();
+        render();
+      }
+    });
+
     render();
   }
 
@@ -4467,7 +5017,7 @@ function wire(){
       .chip.impact.neutral{ border-color: rgba(148,163,184,.28); background: rgba(148,163,184,.10); color: rgba(226,232,240,.92); }
       .chip.impact.bad{ border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.12); color: rgba(254,226,226,.95); }
       #guideOverlay{ display:none; }
-    
+
       /* Phase 4: column visibility */
       .rankWrap{ overflow:auto; }
       .rankWrap.hide-rank [data-col="rank"], .rankWrap.hide-rank th[data-col="rank"],
@@ -4479,7 +5029,7 @@ function wire(){
       .rankWrap.hide-trend [data-col="trend"], .rankWrap.hide-trend th[data-col="trend"],
       .rankWrap.hide-last [data-col="last"], .rankWrap.hide-last th[data-col="last"]{ display:none !important; }
 
-                        
+
 /* Trend popover (click Trend pill) */
 .pillTrend{ cursor:pointer; }
 .pillTrend:focus{ outline: 2px solid rgba(148,163,184,.45); outline-offset: 2px; }
@@ -4686,7 +5236,25 @@ const elChkSighters = $("chkSighters");
 
 
 
-        $("btnClear").addEventListener("click", clearAll);
+        $("btnClear").addEventListener("click", async () => {
+          const snap = snapshotAppState();
+          const ok = await confirmDialog(
+            "Clear ALL barrels + sessions? (You can undo right after.)",
+            { title: "Clear all data", okText: "Clear", cancelText: "Cancel" }
+          );
+          if (!ok) return;
+
+          clearAll();
+          render();
+
+          toast("All data cleared.", "warn", "Cleared", 6500, {
+            actionLabel: "Undo",
+            onAction: () => restoreAppState(snap)
+          });
+        });
+
+        $("btnResetView")?.addEventListener("click", resetView);
+        $("btnQuickHelp")?.addEventListener("click", () => $("btnGuide")?.click?.());
 
     // Phase 1: score breakdown popover
     const scorePop = $("scorePop");
@@ -4762,7 +5330,7 @@ const elChkSighters = $("chkSighters");
       openImport(state.selectedBarrelId);
     });
 
-    
+
     $("btnExport").addEventListener("click", () => {
       // Export everything (barrels + sessions) as JSON
       const payload = buildExportPayload();
@@ -4896,11 +5464,71 @@ window.addEventListener("scroll", () => { if (_trendPopOpen) hideTrendPopover();
 window.addEventListener("resize", () => { if (_trendPopOpen) hideTrendPopover(); }, { passive:true });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideTrendPopover(); });
 
+
+    // Command palette (Ctrl/Cmd+K) + global shortcuts
+    initCmdk();
+
+    document.addEventListener("keydown", (e) => {
+      try{
+        const ov = $("cmdkOverlay");
+        const cmdkOpen = !!(ov && ov.style.display === "flex");
+        const ctrl = e.ctrlKey || e.metaKey;
+        const key = (e.key || "");
+
+        // Open palette
+        if (ctrl && key.toLowerCase() === "k"){
+          e.preventDefault();
+          openCmdk();
+          return;
+        }
+
+        // If palette open, Esc closes (input handles arrows/enter)
+        if (cmdkOpen && key === "Escape"){
+          e.preventDefault();
+          closeCmdk();
+          return;
+        }
+
+        // Don't hijack typing
+        if (isTypingContext()) return;
+
+        // Quick actions
+        if (key === "/"){
+          e.preventDefault();
+          $("inpSearch")?.focus?.();
+          return;
+        }
+        if (key === "?"){
+          e.preventDefault();
+          $("btnGuide")?.click?.();
+          return;
+        }
+        if (key.toLowerCase() === "l"){
+          e.preventDefault();
+          $("btnLockScope")?.click?.();
+          return;
+        }
+        if (key.toLowerCase() === "i"){
+          e.preventDefault();
+          openImport(state.selectedBarrelId);
+          return;
+        }
+        if (key.toLowerCase() === "m"){
+          e.preventDefault();
+          openAddSession(state.selectedBarrelId);
+          return;
+        }
+      }catch{}
+    }, true);
+
 }
 
 
   // Hover tooltips (offline-safe; avoids relying on browser native tooltip quirks)
   function initHoverTooltips(){
+    // Convert any leftover title= tooltips into data-tip and remove native titles
+    purgeNativeTooltips(document);
+
     if (document.getElementById("uiTooltip")) return;
     const tt = document.createElement("div");
     tt.id = "uiTooltip";
@@ -4966,16 +5594,29 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideTrendP
   }
 
 
-  document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("DOMContentLoaded", async () => {
     wire();
     initHoverTooltips();
+    await maybeOfferRestoreAutosave();
     render();
   });
 })();
 </script>
 
   <!-- Session Edit Modal -->
-  <div class="modalOverlay" id="sessModal">
+
+  <!-- Command palette -->
+  <div class="cmdkOverlay" id="cmdkOverlay" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div class="cmdkCard">
+      <div class="cmdkTop">
+        <input class="cmdkInput" id="cmdkInput" placeholder="Type a command… (Esc to close)" autocomplete="off" />
+        <span class="cmdkKbd">Esc</span>
+      </div>
+      <div class="cmdkList" id="cmdkList" role="listbox" aria-label="Commands"></div>
+    </div>
+  </div>
+
+<div class="modalOverlay" id="sessModal">
     <div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="sessModalTitle">
       <div class="modalHead">
         <div>
