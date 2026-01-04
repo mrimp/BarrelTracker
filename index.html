@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
@@ -6,7 +7,7 @@
 <title>BarrelTracker</title>
 <script>
   // Single source of truth for displayed tool version
-  window.BT_APP = { name: "BarrelTracker", version: "4.5.22", channel: "release", build: "2026-01-04", debug: false };
+  window.BT_APP = { name: "BarrelTracker", version: "4.5.23", channel: "release", build: "2026-01-04", debug: false };
   document.title = `${window.BT_APP.name} — v${window.BT_APP.version}`;
   // Release build stamp
   window.BT_APP.tag = `v${window.BT_APP.version}` + (window.BT_APP.build ? ` (${window.BT_APP.build})` : "");
@@ -838,10 +839,10 @@ th[data-tip]{cursor:help;}
   <div class="suiteHeader__left">
     <div class="suiteHeader__topline">
       <div class="suiteHeader__title">BarrelTracker</div>
-      <div class="suiteHeader__pill" id="pillVersion">v4.5.22</div>
+      <div class="suiteHeader__pill" id="pillVersion">v4.5.26</div>
       <div class="suiteHeader__pill suiteHeader__pill--muted">standalone</div>
     </div>
-    <div class="suiteHeader__tagline">Offline barrel performance tracker (v4.5.22) — import sessions, rank barrels, review trends.</div>
+    <div class="suiteHeader__tagline">Offline barrel performance tracker (v4.5.26) — import sessions, rank barrels, review trends.</div>
   </div>
   <div class="suiteHeader__right">
     <div class="suiteHeader__actions">
@@ -1077,7 +1078,7 @@ th[data-tip]{cursor:help;}
       <div class="modalBody">
         <div class="card" style="margin-bottom:14px;">
           <div class="cardHead" style="display:flex;align-items:center;justify-content:space-between;">
-            <div><b>What’s new</b> <span class="small" style="color:var(--muted);" id="whatsNewVer">v4.5.22</span></div>
+            <div><b>What’s new</b> <span class="small" style="color:var(--muted);" id="whatsNewVer">v4.5.26</span></div>
             <button class="btn sm" id="btnSupportBundle" data-tip="Exports extra diagnostics to help debug issues">Export support bundle</button>
           </div>
           <div class="small" style="color:var(--muted);line-height:1.45;">
@@ -1110,7 +1111,7 @@ th[data-tip]{cursor:help;}
         <div class="footerNote">Tip: click a Score to see the full breakdown. Click a row to open the barrel timeline.</div>
       </div>
       <div class="modalFoot">
-        <div class="mini">v4.5.22 • local-only</div>
+        <div class="mini">v4.5.26 • local-only</div>
         <div>
           <button class="btn" id="btnGuideOk">Close</button>
         </div>
@@ -2261,7 +2262,7 @@ function parseCSV(text){
       hn.includes("time") || hn.includes("timestamp") || hn.includes("date") ||
       hn.includes("wind") || hn.includes("temp") || hn.includes("pressure") ||
       hn.includes("elev") || hn.includes("alt") || hn.includes("latitude") || hn.includes("longitude") ||
-      hn.includes("shot") && (hn.includes("x") || hn.includes("y") || hn.includes("radius"))
+      hn.includes("shot") && (hn.includes("x") || hn.includes("y") || hn.includes("radius")) || hn.includes("score")
     );
 
     // Score a column by: (a) pattern strength of uniques, (b) group-size distribution (prefers ~equal groups like 22 shots),
@@ -2445,7 +2446,7 @@ function parseShotMarkerMulti(text, filename){
       for (const b of blocks){
         // ShotMarker Archive format: each session block IS a target/string already (e.g., 12/27/2025,R3,...)
         // Do NOT split these blocks again by Target-like columns.
-        const isArchive = /^\d{1,2}\/\d{1,2}\/\d{4},/.test(String(b.sessionLine||"").trim()) && String(b.headerLine||"").trim().startsWith(",time");
+        const isArchive = (/^[A-Z][a-z]{2}\s+\d{1,2}\s+\d{4},/.test(String(b.sessionLine||"").trim()) || /^\d{1,2}\/\d{1,2}\/\d{4},/.test(String(b.sessionLine||"").trim())) && String(b.headerLine||"").trim().startsWith(",time");
         if (isArchive){
           const sCols = splitLine(b.sessionLine || "");
           const lab = (sCols[1] || "").trim() || "Session";
@@ -3317,18 +3318,42 @@ function parseDateTimeFromFilename(name){
 
   async function handleShotMarkerFiles(files, imp){
     imp.errors = imp.errors || [];
-    imp.notes = [];
+    imp.notes = Array.isArray(imp.notes) ? imp.notes : [];
 
     imp.status = "";
+    // If a user accidentally drops chronograph exports here, auto-route them to the Chrono importer.
+    const allFiles = Array.from(files || []);
+    const xlsLike = allFiles.filter(f => /\.(xls|xlsx)$/i.test(f.name));
+    if (xlsLike.length){
+      try{
+        await handleChronoFiles(xlsLike, imp);
+        imp.notes.push(`Auto-detected ${xlsLike.length} chronograph file${xlsLike.length===1?"":"s"} dropped in ShotMarker; imported under Chrono.`);
+      }catch(e){
+        // fall through — ShotMarker will report its own errors
+      }
+    }
     let sighterTargets = 0;
     const csvFiles = files.filter(f => /\.csv$/i.test(f.name));
     if (!csvFiles.length){
-      imp.errors.push("ShotMarker: please use CSV exports for now.");
+      if (xlsLike && xlsLike.length){
+        // User dropped only chrono exports here; we've already routed them to Chrono above.
+        autoPair(imp);
+        imp.status = imp.status || "Chrono files imported.";
+        return;
+      }
+      imp.errors.push("ShotMarker: please use ShotMarker CSV exports (with x/y), or drop chronograph exports into the Chrono uploader.");
       return;
     }
     for (const f of csvFiles){
       try{
         const text = await f.text();
+        // Heuristic: Garmin "Rifle_Bullet_*.csv" (chrono export) has no x/y columns.
+        // If we see chrono-specific headers, route to Chrono instead of throwing ShotMarker x/y errors.
+        if (/Speed\s*\(FPS\)/i.test(text) && (/KE\s*\(FT-?LBS\)/i.test(text) || /Power\s*Factor/i.test(text) || /Clean\s*Bore/i.test(text) || /Cold\s*Bore/i.test(text))){
+          await handleChronoFiles([f], imp);
+          imp.notes.push(`Auto-detected chronograph export "${f.name}" dropped in ShotMarker; imported under Chrono.`);
+          continue;
+        }
         // Distance: prefer ShotMarker-provided metadata when available
         const dFound = extractDistanceYdFromShotMarker(text);
         if (dFound != null){
@@ -3360,6 +3385,12 @@ function parseDateTimeFromFilename(name){
               warnings: ["Couldn't detect x/y columns"],
               sample: hdrSample
             });
+            // If this "ShotMarker" file is actually a chrono export, route it.
+            if ((/Speed\s*\(FPS\)/i.test(hdrSample) || /KE\s*\(FT-?LBS\)/i.test(hdrSample) || /Power\s*Factor/i.test(hdrSample) || /Clean\s*Bore/i.test(hdrSample) || /Cold\s*Bore/i.test(hdrSample)) && !(/x\s*mm/i.test(hdrSample) || /y\s*mm/i.test(hdrSample))){
+              await handleChronoFiles([f], imp);
+              imp.notes.push(`Auto-detected chronograph export "${f.name}" (missing x/y); imported under Chrono.`);
+              continue;
+            }
             imp.errors.push(`ShotMarker "${f.name}": couldn't find x/y columns in block ${gi+1}. (Expected headers like x mm / y mm.)`);
             continue;
           }
@@ -5828,11 +5859,15 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideTrendP
     // Convert any leftover title= tooltips into data-tip and remove native titles
     purgeNativeTooltips(document);
 
-    if (document.getElementById("uiTooltip")) return;
-    const tt = document.createElement("div");
-    tt.id = "uiTooltip";
-    tt.className = "uiTooltip";
-    document.body.appendChild(tt);
+    const existing = document.getElementById("uiTooltip");
+    const tt = existing || document.createElement("div");
+    if (!existing){
+      tt.id = "uiTooltip";
+      tt.className = "uiTooltip";
+      document.body.appendChild(tt);
+    }else{
+      try{ tt.classList.add("uiTooltip"); }catch{}
+    }
 
     let active = null;
 
@@ -5840,11 +5875,13 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideTrendP
       active = null;
       tt.style.display = "none";
     }
-    function show(el, text){
+
+    function show(el, msg){
       active = el;
-      tt.textContent = text;
+      tt.innerHTML = msg;
       tt.style.display = "block";
     }
+
     function position(ev){
       if (!active || tt.style.display === "none") return;
       let x = (ev && ev.clientX != null) ? ev.clientX : (active.getBoundingClientRect().left + 12);
@@ -5863,8 +5900,22 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideTrendP
       tt.style.top  = y + "px";
     }
 
+    // Support both data-tip and title (we migrate title->data-tip, but this is extra safety)
+    function findTipTarget(node){
+      const el = node?.closest?.("[data-tip],[title]");
+      if (!el) return null;
+      const msg = (el.getAttribute("data-tip") || el.getAttribute("title") || "").trim();
+      if (!msg) return null;
+      // If it's coming from title, migrate immediately so native tooltip doesn't show later
+      if (!el.getAttribute("data-tip") && el.getAttribute("title")) {
+        el.setAttribute("data-tip", msg);
+        el.removeAttribute("title");
+      }
+      return el;
+    }
+
     document.addEventListener("mouseover", (ev) => {
-      const el = ev.target?.closest?.("[data-tip]");
+      const el = findTipTarget(ev.target);
       if (!el) return;
       const msg = el.getAttribute("data-tip");
       if (!msg) return;
@@ -5875,13 +5926,13 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideTrendP
     document.addEventListener("mousemove", (ev) => {
       if (!active) return;
       position(ev);
-    }, { passive:true });
+    }, true);
 
     document.addEventListener("mouseout", (ev) => {
       if (!active) return;
-      const from = ev.target?.closest?.("[data-tip]");
+      const from = ev.target?.closest?.("[data-tip],[title]");
       if (!from || from !== active) return;
-      const to = ev.relatedTarget?.closest?.("[data-tip]");
+      const to = ev.relatedTarget?.closest?.("[data-tip],[title]");
       if (to === active) return;
       hide();
     }, true);
@@ -5890,6 +5941,21 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideTrendP
     window.addEventListener("scroll", hide, { passive:true, capture:true });
     window.addEventListener("resize", hide, { passive:true });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") hide(); });
+
+    // Keep tooltips working even if later renders inject new title="" attributes
+    try{
+      const mo = new MutationObserver((muts) => {
+        for (const m of muts){
+          if (m.type !== "childList") continue;
+          m.addedNodes.forEach(n => {
+            if (!(n instanceof Element)) return;
+            // Fast-path: if the node (or its subtree) contains title attributes, migrate them.
+            if (n.matches?.("[title]") || n.querySelector?.("[title]")) purgeNativeTooltips(n);
+          });
+        }
+      });
+      mo.observe(document.body, { childList:true, subtree:true });
+    }catch{}
   }
 
 
@@ -6004,202 +6070,5 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideTrendP
 
 
 
-<div id="uiTooltip" class="uiTooltip" style="display: none; left: 1120px; top: 113px;">Freeze rankings to prevent accidental scope changes mid-match</div><div id="twc-ssr-ioo-phe" style="position: fixed; top: 0px; left: 0px; width: 100%; height: 100%; z-index: 10000; pointer-events: none;"><template shadowrootmode="open"><div>
-        <style>* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Lato', sans-serif;
-}
 
-button {
-    padding: 0;
-    border: none;
-    font: inherit;
-    color: inherit;
-    background-color: transparent;
-    cursor: pointer;
-}
-
-#shortcut-selected,
-#shortcut-visible {
-    position: absolute;
-    top: 15px;
-    right: 335px;
-}
-
-.tooltip{
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    color: #ffffff;
-    gap: 16px;
-    width: 365px;
-    padding: 25px;
-    background-color: #212121;
-    border-radius: 10px;
-    box-shadow: 0px 0px 20px 0px rgba(185, 185, 185, 0.6);
-    z-index: 1000;
-    pointer-events: auto;
-}
-
-.tooltip__header{
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.tooltip__icon{
-    height: 20px;
-    width: 20px;
-}
-
-.tooltip__title{
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.tooltip__title h3{
-    font-size: 18px;
-    font-weight: 600;
-}
-
-.tooltip__close{
-    padding: 0;
-    margin: 0;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.tooltip__content{
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.tooltip__subtitle{
-    font-size: 14px;
-    font-weight: 400;
-}
-
-.tooltip__stats{
-    font-size: 12px;
-    font-weight: 400;
-}
-
-.tooltip__actions{
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-}
-
-.tooltip__settings{
-    border: 1px solid #212121;
-    padding: 6px 0;
-    border-radius: 5px;
-    color: #D5D5D5;
-    font-size: 14px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    padding-left: 5px;
-}
-
-.tooltip__settings:hover{
-    border: 1px solid #06DFC9;
-    color: #ffffff;
-}
-
-.tooltip__settings:hover img,
-.tooltip__settings-text:hover{
-    filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(7500%) hue-rotate(56deg) brightness(97%) contrast(107%);
-}
-
-.tooltip__confirm{
-    background: #06DFC9;
-    border: 1px solid #06DFC9;
-    padding: 6px 0;
-    border-radius: 5px;
-    color: #212121;
-    width: 100%;
-    font-size: 14px;
-    font-weight: 700;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-}
-
-.tooltip__confirm:hover{
-    border: 1px solid #05AD9C;
-    background: #05AD9C;
-}
-
-.tooltip__confirm:active{
-    background: #05AD9C;
-    color: #ffffff;
-}
-
-.tooltip--arrow-top::before{
-    content: '';
-    position: absolute;
-    top: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 15px solid transparent;
-    border-right: 15px solid transparent;
-    border-bottom: 15px solid #212121;
-}
-
-.tooltip--arrow-left::before{
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: -10px;
-    transform: translateY(-50%);
-    width: 0;
-    height: 0;
-    border-top: 15px solid transparent;
-    border-bottom: 15px solid transparent;
-    border-right: 15px solid #212121;
-}
-
-.tooltip--arrow-right::after{
-    content: '';
-    position: absolute;
-    top: 50%;
-    right: -10px;
-    transform: translateY(-50%);
-    width: 0;
-    height: 0;
-    border-top: 15px solid transparent;
-    border-bottom: 15px solid transparent;
-    border-left: 15px solid #212121;
-}
-
-.hidden{
-    display: none;
-}</style>
-        
-            <div id="confirmOverlay" class="confirmOverlay" style="display: none;">
-      <div class="confirmCard" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
-        <div class="confirmTitle" id="confirmTitle">Import JSON</div>
-        <div class="confirmMsg" id="confirmMsg">Import JSON:
-
-OK = REPLACE current barrels + sessions
-Cancel = MERGE (keep existing, add/overwrite by id)</div>
-        <div class="confirmActions">
-          <button class="btn sm" id="btnConfirmCancel">Merge</button>
-          <button class="btn sm primary" id="btnConfirmOK">Replace</button>
-        </div>
-      </div>
-    </div><div id="toastHost" class="toastHost" aria-live="polite"></div></body></html>
+</body></html>
