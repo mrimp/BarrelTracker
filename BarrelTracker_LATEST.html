@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<!-- saved from url=(0038)https://mrimp.github.io/BarrelTracker/ -->
+<!-- saved from url=(0014)about:internet -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -917,9 +917,91 @@ th[data-tip]{cursor:help;}
             .captureFixedShim { position: absolute !important; }
             .captureStickyShim { position: static !important; }
             .captureHeaderShim { position: relative !important; }
-        </style><link href="./BarrelTracker — v4.5.24_files/css2" rel="stylesheet"><style id="ar2f2dae4ad6style">
+        </style>
+<style id="ar2f2dae4ad6style">
 				.ar2f2dae4ad6hidden{ position:absolute !important; opacity:0 !important; pointer-events:none !important}
-			</style></head>
+			</style><style>
+      .scoreCell{ cursor:pointer; text-decoration: underline dotted rgba(255,255,255,.25); text-underline-offset: 2px; }
+      .scoreCell:hover{ text-decoration-color: rgba(255,255,255,.55); }
+      .chip.impact{ font-weight:900; }
+      .chip.impact.good{ border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.12); color: rgba(220,252,231,.95); }
+      .chip.impact.neutral{ border-color: rgba(148,163,184,.28); background: rgba(148,163,184,.10); color: rgba(226,232,240,.92); }
+      .chip.impact.bad{ border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.12); color: rgba(254,226,226,.95); }
+      #guideOverlay{ display:none; }
+
+      /* Phase 4: column visibility */
+      .rankWrap{ overflow:auto; }
+      .rankWrap.hide-rank [data-col="rank"], .rankWrap.hide-rank th[data-col="rank"],
+      .rankWrap.hide-conf [data-col="conf"], .rankWrap.hide-conf th[data-col="conf"],
+      .rankWrap.hide-vert [data-col="vert"], .rankWrap.hide-vert th[data-col="vert"],
+      .rankWrap.hide-mr [data-col="mr"], .rankWrap.hide-mr th[data-col="mr"],
+      .rankWrap.hide-sd [data-col="sd"], .rankWrap.hide-sd th[data-col="sd"],
+      .rankWrap.hide-life [data-col="life"], .rankWrap.hide-life th[data-col="life"],
+      .rankWrap.hide-trend [data-col="trend"], .rankWrap.hide-trend th[data-col="trend"],
+      .rankWrap.hide-last [data-col="last"], .rankWrap.hide-last th[data-col="last"]{ display:none !important; }
+
+
+/* Trend popover (click Trend pill) */
+.pillTrend{ cursor:pointer; }
+.pillTrend:focus{ outline: 2px solid rgba(148,163,184,.45); outline-offset: 2px; }
+
+#trendPop{ position:fixed; inset:0; display:none; z-index: 99999; }
+#trendPop.show{ display:block; }
+#trendPop .trendCard{
+  position:fixed;
+  width: 340px;
+  max-width: calc(100vw - 24px);
+  border-radius: 18px;
+  border:1px solid rgba(148,163,184,.24);
+  background: rgba(2,6,23,.94);
+  box-shadow: 0 24px 80px rgba(0,0,0,.55);
+  padding: 14px 14px 12px;
+  color: rgba(226,232,240,.96);
+}
+#trendPop .trendHead{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+#trendPop .trendTitle{ font-size: 22px; font-weight: 900; letter-spacing: .2px; }
+#trendPop .trendClose{
+  border:1px solid rgba(148,163,184,.22);
+  background: rgba(148,163,184,.08);
+  color: rgba(226,232,240,.92);
+  border-radius: 12px;
+  height: 34px;
+  width: 34px;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+}
+#trendPop .trendClose:hover{ background: rgba(148,163,184,.12); }
+
+#trendPop .trendRow{ display:flex; align-items:center; gap:12px; }
+#trendPop .trendIcon{
+  width: 44px; height: 44px;
+  border-radius: 14px;
+  border:1px solid rgba(148,163,184,.22);
+  background: rgba(148,163,184,.08);
+  display:grid; place-items:center;
+  font-weight: 900;
+}
+#trendPop .trendIcon.good{ border-color: rgba(34,197,94,.32); background: rgba(34,197,94,.10); color: rgba(220,252,231,.95); }
+#trendPop .trendIcon.bad{  border-color: rgba(239,68,68,.32); background: rgba(239,68,68,.10); color: rgba(254,226,226,.95); }
+#trendPop .trendIcon.neutral{ border-color: rgba(148,163,184,.26); background: rgba(148,163,184,.08); color: rgba(226,232,240,.92); }
+
+#trendPop .trendSpark{ width: 240px; height: 56px; display:block; }
+#trendPop .sparkPath{ fill:none; stroke: rgba(148,163,184,.85); stroke-width:3; stroke-linecap:round; }
+#trendPop .sparkDot{ fill: rgba(226,232,240,.92); }
+#trendPop .sparkPath.good{ stroke: rgba(34,197,94,.9); }
+#trendPop .sparkPath.bad{  stroke: rgba(239,68,68,.9); }
+#trendPop .sparkPath.neutral{ stroke: rgba(148,163,184,.85); }
+#trendPop .trendText{ margin-top: 10px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+
+/* Columns modal */
+      #colsOverlay{ display:none; }
+      .colsGrid{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; }
+      .colsGrid label{ display:flex; gap:10px; align-items:center; padding:10px; border-radius:12px;
+        border:1px solid rgba(148,163,184,.22); background: rgba(148,163,184,.06); }
+      .colsGrid input{ transform: translateY(1px); }
+      .colsHint{ color: var(--muted); font-size: 12px; margin-top: 8px; }
+</style></head>
 <body data-mode="timeline" class="">
   <div class="wrap">
     <header class="suiteHeader">
@@ -951,7 +1033,7 @@ th[data-tip]{cursor:help;}
       <div class="panelHead">
         <div>
           <h2>Barrel Ranking — Current Form <span class="helpIcon" data-tip="Ranking score (0–100) uses fixed v1 weights: Score = clamp(100 − Vert×Wv − MR×Wmr − SD×Wsd, 0, 100) × ConfMult. Wv=60, Wmr=20, Wsd=1.2. ConfMult: High 1.00, Mod 0.90, Low 0.78. Lower Vert/MR/SD is better; confidence only scales the result.">?</span></h2>
-          <div class="note">Last <span id="lblWindow">800</span> rounds · Min confidence: <span id="lblMinConf">Moderate</span> · <span id="lblSighters">Show sighters</span></div>
+          <div class="note">Last <span id="lblWindow">400</span> rounds · Min confidence: <span id="lblMinConf">Moderate</span> · <span id="lblSighters">Show sighters</span></div>
           <div class="hint"></div>
         </div>
         <div class="controls">
@@ -1052,66 +1134,7 @@ th[data-tip]{cursor:help;}
           </thead>
           <tbody id="rankBody"><tr class="row" style="outline: rgba(99, 102, 241, 0.35) solid 2px; outline-offset: -2px;">
           <td data-col="idx">1</td>
-          <td data-col="barrel" class="barrel">Brux-02</td>
-          <td data-col="rank"><b>42.0</b></td>
-          <td data-col="conf"><span class="conf high" data-tip="Confidence: High">High</span></td>
-          <td data-col="vert">0.67</td>
-          <td data-col="mr">0.22</td>
-          <td data-col="sd">11.3</td>
-          <td data-col="life">1254</td>
-          <td data-col="trend"><button type="button" class="trendMini trend down" data-trend="Brux-02" data-tip="Trend: Down"><span class="trendwrap"><span class="arrow">▼</span><svg class="spark" viewBox="0 0 80 18" aria-hidden="true">
-                <path d="M2 4 L16 6 L30 8 L44 10 L58 12 L72 14"></path>
-                <circle class="dot" cx="72" cy="14" r="2.5"></circle>
-              </svg></span></button></td>
-          <td data-col="last" class="lastCol"><div class="lsTop" data-tip="Oct 11, 2025 — SM_shotslog_Oct
-Oct 11">Oct 11, 2025 — SM_shotslog_Oct</div><div class="lsSub">Oct 11</div></td>
-        </tr><tr class="row">
-          <td data-col="idx">2</td>
-          <td data-col="barrel" class="barrel">Brux-01</td>
-          <td data-col="rank" class="muted">—</td>
-          <td data-col="conf" class="muted">—</td>
-          <td data-col="vert" class="muted">—</td>
-          <td data-col="mr" class="muted">—</td>
-          <td data-col="sd" class="muted">—</td>
-          <td data-col="life">400</td>
-          <td data-col="trend" class="muted">—</td>
-          <td data-col="last" class="muted">—</td>
-        </tr><tr class="row">
-          <td data-col="idx">3</td>
-          <td data-col="barrel" class="barrel">Brux-1</td>
-          <td data-col="rank" class="muted">—</td>
-          <td data-col="conf" class="muted">—</td>
-          <td data-col="vert" class="muted">—</td>
-          <td data-col="mr" class="muted">—</td>
-          <td data-col="sd" class="muted">—</td>
-          <td data-col="life">0</td>
-          <td data-col="trend" class="muted">—</td>
-          <td data-col="last" class="muted">—</td>
-        </tr><tr class="row">
-          <td data-col="idx">4</td>
-          <td data-col="barrel" class="barrel">Brux-2</td>
-          <td data-col="rank" class="muted">—</td>
-          <td data-col="conf" class="muted">—</td>
-          <td data-col="vert" class="muted">—</td>
-          <td data-col="mr" class="muted">—</td>
-          <td data-col="sd" class="muted">—</td>
-          <td data-col="life">0</td>
-          <td data-col="trend" class="muted">—</td>
-          <td data-col="last" class="muted">—</td>
-        </tr><tr class="row">
-          <td data-col="idx">5</td>
-          <td data-col="barrel" class="barrel">Krieger-1</td>
-          <td data-col="rank" class="muted">—</td>
-          <td data-col="conf" class="muted">—</td>
-          <td data-col="vert" class="muted">—</td>
-          <td data-col="mr" class="muted">—</td>
-          <td data-col="sd" class="muted">—</td>
-          <td data-col="life">0</td>
-          <td data-col="trend" class="muted">—</td>
-          <td data-col="last" class="muted">—</td>
-        </tr><tr class="row">
-          <td data-col="idx">6</td>
-          <td data-col="barrel" class="barrel">Krieger-2</td>
+          <td data-col="barrel" class="barrel">B1</td>
           <td data-col="rank" class="muted">—</td>
           <td data-col="conf" class="muted">—</td>
           <td data-col="vert" class="muted">—</td>
@@ -1129,11 +1152,11 @@ Oct 11">Oct 11, 2025 — SM_shotslog_Oct</div><div class="lsSub">Oct 11</div></t
       <div class="card" id="detailCard">
         <div class="cardHead">
           <div>
-            <h3 id="detailTitle">Brux-02 — Timeline</h3>
-            <div class="small" id="detailSub">Current form window: last 800 rounds · Confidence: High</div>
+            <h3 id="detailTitle">B1 — Timeline</h3>
+            <div class="small" id="detailSub">No sessions yet</div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
-            <div class="small" id="detailMeta">Life: 1254 rds</div>
+            <div class="small" id="detailMeta">Life: 0 rds</div>
             <div id="detailActions" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
       <button class="btn sm primary" id="btnOpenImport">Import</button>
       <button class="btn sm" id="btnOpenManual">+ Manual</button>
@@ -1142,87 +1165,12 @@ Oct 11">Oct 11, 2025 — SM_shotslog_Oct</div><div class="lsSub">Oct 11</div></t
           </div>
         </div>
         <div class="cardBody" id="detailBody">
-      <div class="sessionRow" data-sid="S_1767586453768_ac306bf6872cd8">
-        <div class="rowTop">
-          <div class="sessionTitle">Oct 11, 2025 — SM_shotslog_Oct</div>
-          <button class="iconBtn" data-action="edit" data-sid="S_1767586453768_ac306bf6872cd8" data-tip="Edit session">✎</button>
-        </div>
-        <div class="chips"><span class="chip sighters">Record</span><span class="chip">20/22</span><span class="chip">Vert 0.56 MOA</span><span class="chip">MR 0.19 MOA</span><span class="chip">SD 10.8 fps</span><span class="chip conf high" data-tip="Confidence: High — trust in the data (sample size + consistency + data quality). It scales Rank; it doesn’t “create” performance.">High</span><span class="chip impact good" data-tip="Session impact vs rolling baseline: improved Vert by ≥0.05 MOA and did not increase SD.">🟢 Helped barrel</span></div>
-        <div class="fileLine">SM_shotslog_Oct.csv (T1) + Rifle_Bullet_2025-10-11_09-08-06.csv</div>
-      </div>
-    
-      <div class="sessionRow" data-sid="S_1767586453769_0c0cc00b2f858">
-        <div class="rowTop">
-          <div class="sessionTitle">Oct 11, 2025 — SM_shotslog_Oct</div>
-          <button class="iconBtn" data-action="edit" data-sid="S_1767586453769_0c0cc00b2f858" data-tip="Edit session">✎</button>
-        </div>
-        <div class="chips"><span class="chip sighters">Record</span><span class="chip">20/22</span><span class="chip">Vert 0.68 MOA</span><span class="chip">MR 0.22 MOA</span><span class="chip">SD 9.9 fps</span><span class="chip conf high" data-tip="Confidence: High — trust in the data (sample size + consistency + data quality). It scales Rank; it doesn’t “create” performance.">High</span><span class="chip impact neutral" data-tip="Session impact vs rolling baseline: within the noise band (no clear improvement/regression).">⚪ Neutral</span></div>
-        <div class="fileLine">SM_shotslog_Oct.csv (T2) + Rifle_Bullet_2025-10-11_09-49-30.csv</div>
-      </div>
-    
-      <div class="sessionRow" data-sid="S_1767586453769_1c49cf78ea693">
-        <div class="rowTop">
-          <div class="sessionTitle">Oct 11, 2025 — SM_shotslog_Oct</div>
-          <button class="iconBtn" data-action="edit" data-sid="S_1767586453769_1c49cf78ea693" data-tip="Edit session">✎</button>
-        </div>
-        <div class="chips"><span class="chip sighters">Record</span><span class="chip">20/26</span><span class="chip">Vert 0.86 MOA</span><span class="chip">MR 0.25 MOA</span><span class="chip">SD 29.0 fps</span><span class="chip conf high" data-tip="Confidence: High — trust in the data (sample size + consistency + data quality). It scales Rank; it doesn’t “create” performance.">High</span><span class="chip impact bad" data-tip="Session impact vs rolling baseline: worsened Vert by ≥0.05 MOA and increased SD by ≥0.5 fps.">🔴 Hurt confidence</span></div>
-        <div class="fileLine">SM_shotslog_Oct.csv (T3) + Rifle_Bullet_2025-10-11_08-19-43.xls</div>
-      </div>
-    
-      <div class="sessionRow" data-sid="S_1767566247547_4e4be750489238">
-        <div class="rowTop">
-          <div class="sessionTitle">Sep 25, 2025 — SM_shotslog_Dec_18</div>
-          <button class="iconBtn" data-action="edit" data-sid="S_1767566247547_4e4be750489238" data-tip="Edit session">✎</button>
-        </div>
-        <div class="chips"><span class="chip sighters">Record</span><span class="chip">20/22</span><span class="chip">Vert 0.57 MOA</span><span class="chip">MR 0.22 MOA</span><span class="chip">SD 9.9 fps</span><span class="chip conf high" data-tip="Confidence: High — trust in the data (sample size + consistency + data quality). It scales Rank; it doesn’t “create” performance.">High</span><span class="chip impact good" data-tip="Session impact vs rolling baseline: improved Vert by ≥0.05 MOA and did not increase SD.">🟢 Helped barrel</span></div>
-        <div class="fileLine">SM_shotslog_Dec_18.csv (T1) + Rifle_Bullet_2025-09-25_08-10-02.csv</div>
-      </div>
-    
-      <div class="sessionRow" data-sid="S_1767566247547_98aa02b1c7eb98">
-        <div class="rowTop">
-          <div class="sessionTitle">Sep 25, 2025 — SM_shotslog_Dec_18</div>
-          <button class="iconBtn" data-action="edit" data-sid="S_1767566247547_98aa02b1c7eb98" data-tip="Edit session">✎</button>
-        </div>
-        <div class="chips"><span class="chip sighters">Record</span><span class="chip">20/22</span><span class="chip">Vert 0.57 MOA</span><span class="chip">MR 0.21 MOA</span><span class="chip">SD 6.4 fps</span><span class="chip conf high" data-tip="Confidence: High — trust in the data (sample size + consistency + data quality). It scales Rank; it doesn’t “create” performance.">High</span><span class="chip impact good" data-tip="Session impact vs rolling baseline: improved Vert by ≥0.05 MOA and did not increase SD.">🟢 Helped barrel</span></div>
-        <div class="fileLine">SM_shotslog_Dec_18.csv (T2) + Rifle_Bullet_2025-09-07_08-10-13.csv</div>
-      </div>
-    
-      <div class="sessionRow" data-sid="S_1767566247547_23855feac9a2b8">
-        <div class="rowTop">
-          <div class="sessionTitle">Sep 25, 2025 — SM_shotslog_Dec_18</div>
-          <button class="iconBtn" data-action="edit" data-sid="S_1767566247547_23855feac9a2b8" data-tip="Edit session">✎</button>
-        </div>
-        <div class="chips"><span class="chip sighters">Record</span><span class="chip">20/22</span><span class="chip">Vert 0.83 MOA</span><span class="chip">MR 0.21 MOA</span><span class="chip">SD 9.5 fps</span><span class="chip conf high" data-tip="Confidence: High — trust in the data (sample size + consistency + data quality). It scales Rank; it doesn’t “create” performance.">High</span><span class="chip impact neutral" data-tip="Session impact vs rolling baseline: within the noise band (no clear improvement/regression).">⚪ Neutral</span></div>
-        <div class="fileLine">SM_shotslog_Dec_18.csv (T3) + Rifle_Bullet_2025-09-13_11-45-46.csv</div>
-      </div>
-    
-      <div class="sessionRow" data-sid="S_1767586453768_ba08993284cf7">
-        <div class="rowTop">
-          <div class="sessionTitle">Sep 25, 2025 — SM_shotslog_Dec_18</div>
-          <button class="iconBtn" data-action="edit" data-sid="S_1767586453768_ba08993284cf7" data-tip="Edit session">✎</button>
-        </div>
-        <div class="chips"><span class="chip sighters">Record</span><span class="chip">20/22</span><span class="chip">Vert 0.57 MOA</span><span class="chip">MR 0.22 MOA</span><span class="chip">SD 9.9 fps</span><span class="chip conf high" data-tip="Confidence: High — trust in the data (sample size + consistency + data quality). It scales Rank; it doesn’t “create” performance.">High</span><span class="chip impact good" data-tip="Session impact vs rolling baseline: improved Vert by ≥0.05 MOA and did not increase SD.">🟢 Helped barrel</span></div>
-        <div class="fileLine">SM_shotslog_Dec_18.csv (T1) + Rifle_Bullet_2025-09-25_08-10-02.csv</div>
-      </div>
-    
-      <div class="sessionRow" data-sid="S_1767586453768_f2d8bbd1f56cb8">
-        <div class="rowTop">
-          <div class="sessionTitle">Sep 25, 2025 — SM_shotslog_Dec_18</div>
-          <button class="iconBtn" data-action="edit" data-sid="S_1767586453768_f2d8bbd1f56cb8" data-tip="Edit session">✎</button>
-        </div>
-        <div class="chips"><span class="chip sighters">Record</span><span class="chip">20/22</span><span class="chip">Vert 0.57 MOA</span><span class="chip">MR 0.21 MOA</span><span class="chip">SD 6.4 fps</span><span class="chip conf high" data-tip="Confidence: High — trust in the data (sample size + consistency + data quality). It scales Rank; it doesn’t “create” performance.">High</span><span class="chip impact good" data-tip="Session impact vs rolling baseline: improved Vert by ≥0.05 MOA and did not increase SD.">🟢 Helped barrel</span></div>
-        <div class="fileLine">SM_shotslog_Dec_18.csv (T2) + Rifle_Bullet_2025-09-07_08-10-13.csv</div>
-      </div>
-    
-      <div class="sessionRow" data-sid="S_1767586453768_a5ab6ddaf6d6d8">
-        <div class="rowTop">
-          <div class="sessionTitle">Sep 25, 2025 — SM_shotslog_Dec_18</div>
-          <button class="iconBtn" data-action="edit" data-sid="S_1767586453768_a5ab6ddaf6d6d8" data-tip="Edit session">✎</button>
-        </div>
-        <div class="chips"><span class="chip sighters">Record</span><span class="chip">20/22</span><span class="chip">Vert 0.83 MOA</span><span class="chip">MR 0.21 MOA</span><span class="chip">SD 9.5 fps</span><span class="chip conf high" data-tip="Confidence: High — trust in the data (sample size + consistency + data quality). It scales Rank; it doesn’t “create” performance.">High</span><span class="chip impact neutral" data-tip="Session impact vs rolling baseline: within the noise band (no clear improvement/regression).">⚪ Neutral</span></div>
-        <div class="fileLine">SM_shotslog_Dec_18.csv (T3) + Rifle_Bullet_2025-09-13_11-45-46.csv</div>
-      </div>
+    <div class="mini">
+      No sessions yet for this barrel.
+      <br><br>
+      Use <b>+ Add session</b> to enter a manual session (imports get wired after).
     </div>
+  </div>
       </div>
 
 
@@ -6251,7 +6199,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideTrendP
 
 
 
-<div id="uiTooltip" class="uiTooltip" style="display: none;"></div><div id="confirmOverlay" class="confirmOverlay" style="display: none;">
+<div id="uiTooltip" class="uiTooltip" style="display: none; left: 855px; top: 500px;">Delete this barrel (and its sessions)</div><div id="confirmOverlay" class="confirmOverlay" style="display: none;">
       <div class="confirmCard" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
         <div class="confirmTitle" id="confirmTitle">Restore autosave?</div>
         <div class="confirmMsg" id="confirmMsg">Restore your last autosave from 1/4/2026, 9:14:14 PM?
@@ -6454,11 +6402,11 @@ button {
             <div id="shortcut-selected" class="tooltip tooltip--arrow-top hidden">
                 <div class="tooltip__header">
                     <div class="tooltip__title">
-                        <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/badge-emblem.svg" alt="badge-emblem icon" class="tooltip__icon"><img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/selected.svg" alt="selected icon" class="tooltip__icon">
+                        <img src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%3E%0A%20%20%3Cpath%20fill=%22currentColor%22%20d=%22M12%202%2020%205v7c0%205-3.4%209.4-8%2010-4.6-.6-8-5-8-10V5l8-3zm0%205.2L7%208.7V12c0%203.5%202.1%206.8%205%207.7%202.9-.9%205-4.2%205-7.7V8.7l-5-1.5z%22/%3E%0A%3C/svg%3E" alt="badge-emblem icon" class="tooltip__icon"><img src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%3E%0A%20%20%3Cpath%20fill=%22currentColor%22%20d=%22M12%202a10%2010%200%201%200%200%2020%2010%2010%200%200%200%200-20zm-1.2%2014.2-4-4%201.4-1.4%202.6%202.6%205.6-5.6%201.4%201.4-7%207z%22/%3E%0A%3C/svg%3E" alt="selected icon" class="tooltip__icon">
                         <h3 class="tooltip__title">Alt + Shift + S</h3>
                     </div>
                     <button class="tooltip__close">
-                        <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/close.svg" alt="close-icon">
+                        <img src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%3E%0A%20%20%3Cpath%20fill=%22currentColor%22%20d=%22M18.3%205.71%2012%2012l6.3%206.29-1.41%201.42L10.59%2013.4%204.29%2019.71%202.88%2018.3%209.17%2012%202.88%205.71%204.29%204.29l6.3%206.31%206.3-6.31z%22/%3E%0A%3C/svg%3E" alt="close-icon">
                     </button>
                 </div>
     
@@ -6470,7 +6418,7 @@ button {
                 
         <div class="tooltip__actions">
             <button class="tooltip__settings">
-                <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/settings.svg" alt="settings-icon">
+                <img src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%3E%0A%20%20%3Cpath%20fill=%22currentColor%22%20d=%22M19.4%2013a7.9%207.9%200%200%200%20.1-1l2-1.5-2-3.5-2.4%201a8.7%208.7%200%200%200-1.7-1L15%204h-6l-.4%203a8.7%208.7%200%200%200-1.7%201L4.5%207%202.5%2010.5l2%201.5a7.9%207.9%200%200%200%200%202l-2%201.5%202%203.5%202.4-1a8.7%208.7%200%200%200%201.7%201L9%2020h6l.4-3a8.7%208.7%200%200%200%201.7-1l2.4%201%202-3.5-2-1.5zM12%2015.5A3.5%203.5%200%201%201%2012%208a3.5%203.5%200%200%201%200%207.5z%22/%3E%0A%3C/svg%3E" alt="settings-icon">
                 <p class="tooltip__settings-text">Settings</p>
             </button>
             <button class="tooltip__confirm">Got it</button>
@@ -6480,11 +6428,11 @@ button {
             <div id="shortcut-visible" class="tooltip tooltip--arrow-top hidden">
                 <div class="tooltip__header">
                     <div class="tooltip__title">
-                        <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/badge-emblem.svg" alt="badge-emblem icon" class="tooltip__icon"><img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/viewport-route.svg" alt="viewport-route icon" class="tooltip__icon">
+                        <img src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%3E%0A%20%20%3Cpath%20fill=%22currentColor%22%20d=%22M12%202%2020%205v7c0%205-3.4%209.4-8%2010-4.6-.6-8-5-8-10V5l8-3zm0%205.2L7%208.7V12c0%203.5%202.1%206.8%205%207.7%202.9-.9%205-4.2%205-7.7V8.7l-5-1.5z%22/%3E%0A%3C/svg%3E" alt="badge-emblem icon" class="tooltip__icon"><img src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%3E%0A%20%20%3Cpath%20fill=%22currentColor%22%20d=%22M5%206a2%202%200%201%201%204%200%202%202%200%200%201-4%200zm10%2012a2%202%200%201%201%204%200%202%202%200%200%201-4%200zM8%206h5a5%205%200%200%201%205%205v5h-2v-5a3%203%200%200%200-3-3H8V6zm0%2010h6v2H8a4%204%200%200%201-4-4V9h2v5a2%202%200%200%200%202%202z%22/%3E%0A%3C/svg%3E" alt="viewport-route icon" class="tooltip__icon">
                         <h3 class="tooltip__title">Alt + Shift + V</h3>
                     </div>
                     <button class="tooltip__close">
-                        <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/close.svg" alt="close-icon">
+                        <img src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%3E%0A%20%20%3Cpath%20fill=%22currentColor%22%20d=%22M18.3%205.71%2012%2012l6.3%206.29-1.41%201.42L10.59%2013.4%204.29%2019.71%202.88%2018.3%209.17%2012%202.88%205.71%204.29%204.29l6.3%206.31%206.3-6.31z%22/%3E%0A%3C/svg%3E" alt="close-icon">
                     </button>
                 </div>
     
@@ -6496,7 +6444,7 @@ button {
                 
         <div class="tooltip__actions">
             <button class="tooltip__settings">
-                <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/settings.svg" alt="settings-icon">
+                <img src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%3E%0A%20%20%3Cpath%20fill=%22currentColor%22%20d=%22M19.4%2013a7.9%207.9%200%200%200%20.1-1l2-1.5-2-3.5-2.4%201a8.7%208.7%200%200%200-1.7-1L15%204h-6l-.4%203a8.7%208.7%200%200%200-1.7%201L4.5%207%202.5%2010.5l2%201.5a7.9%207.9%200%200%200%200%202l-2%201.5%202%203.5%202.4-1a8.7%208.7%200%200%200%201.7%201L9%2020h6l.4-3a8.7%208.7%200%200%200%201.7-1l2.4%201%202-3.5-2-1.5zM12%2015.5A3.5%203.5%200%201%201%2012%208a3.5%203.5%200%200%201%200%207.5z%22/%3E%0A%3C/svg%3E" alt="settings-icon">
                 <p class="tooltip__settings-text">Settings</p>
             </button>
             <button class="tooltip__confirm">Got it</button>
@@ -6506,11 +6454,11 @@ button {
             <div id="lines" class="tooltip tooltip--arrow-left hidden">
                 <div class="tooltip__header">
                     <div class="tooltip__title">
-                        <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/ui.svg" alt="ui icon" class="tooltip__icon">
+                        <img src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%3E%0A%20%20%3Cpath%20fill=%22currentColor%22%20d=%22M4%204h16v16H4V4zm2%202v4h12V6H6zm0%206v6h6v-6H6zm8%200v6h4v-6h-4z%22/%3E%0A%3C/svg%3E" alt="ui icon" class="tooltip__icon">
                         <h3 class="tooltip__title">Lines and Arrows</h3>
                     </div>
                     <button class="tooltip__close">
-                        <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/close.svg" alt="close-icon">
+                        <img src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%3E%0A%20%20%3Cpath%20fill=%22currentColor%22%20d=%22M18.3%205.71%2012%2012l6.3%206.29-1.41%201.42L10.59%2013.4%204.29%2019.71%202.88%2018.3%209.17%2012%202.88%205.71%204.29%204.29l6.3%206.31%206.3-6.31z%22/%3E%0A%3C/svg%3E" alt="close-icon">
                     </button>
                 </div>
     
@@ -6525,11 +6473,11 @@ button {
             <div id="crop" class="tooltip tooltip--arrow-left hidden">
                 <div class="tooltip__header">
                     <div class="tooltip__title">
-                        <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/selected.svg" alt="selected icon" class="tooltip__icon">
+                        <img src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%3E%0A%20%20%3Cpath%20fill=%22currentColor%22%20d=%22M12%202a10%2010%200%201%200%200%2020%2010%2010%200%200%200%200-20zm-1.2%2014.2-4-4%201.4-1.4%202.6%202.6%205.6-5.6%201.4%201.4-7%207z%22/%3E%0A%3C/svg%3E" alt="selected icon" class="tooltip__icon">
                         <h3 class="tooltip__title">Crop</h3>
                     </div>
                     <button class="tooltip__close">
-                        <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/close.svg" alt="close-icon">
+                        <img src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%3E%0A%20%20%3Cpath%20fill=%22currentColor%22%20d=%22M18.3%205.71%2012%2012l6.3%206.29-1.41%201.42L10.59%2013.4%204.29%2019.71%202.88%2018.3%209.17%2012%202.88%205.71%204.29%204.29l6.3%206.31%206.3-6.31z%22/%3E%0A%3C/svg%3E" alt="close-icon">
                     </button>
                 </div>
     
@@ -6544,11 +6492,11 @@ button {
             <div id="undo" class="tooltip tooltip--arrow-right hidden">
                 <div class="tooltip__header">
                     <div class="tooltip__title">
-                        <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/undo-arrow.svg" alt="undo-arrow icon" class="tooltip__icon">
+                        <img src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%3E%0A%20%20%3Cpath%20fill=%22currentColor%22%20d=%22M12%205c-4.4%200-8%203.6-8%208H1l4%204%204-4H6c0-3.3%202.7-6%206-6%202.6%200%204.9%201.6%205.7%204h2.1C18.9%208.2%2015.8%205%2012%205z%22/%3E%0A%3C/svg%3E" alt="undo-arrow icon" class="tooltip__icon">
                         <h3 class="tooltip__title">Undo anytime</h3>
                     </div>
                     <button class="tooltip__close">
-                        <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/close.svg" alt="close-icon">
+                        <img src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%3E%0A%20%20%3Cpath%20fill=%22currentColor%22%20d=%22M18.3%205.71%2012%2012l6.3%206.29-1.41%201.42L10.59%2013.4%204.29%2019.71%202.88%2018.3%209.17%2012%202.88%205.71%204.29%204.29l6.3%206.31%206.3-6.31z%22/%3E%0A%3C/svg%3E" alt="close-icon">
                     </button>
                 </div>
     
@@ -6566,4 +6514,5 @@ button {
     }
     .captureSelectionFrame {
         cursor: crosshair; z-index: 2147483647; border: 3px dashed #06DFC9; position: fixed; background-color: rgba(38, 37, 37, 0.69);
-    }</style></template></div><div id="toastHost" class="toastHost" aria-live="polite"></div></body></html>
+    }</style></template></div><div id="toastHost" class="toastHost" aria-live="polite"></div>
+</body></html>
