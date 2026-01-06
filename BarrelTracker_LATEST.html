@@ -1,13 +1,13 @@
 
-
 <!DOCTYPE html>
+<!-- saved from url=(0038)https://mrimp.github.io/BarrelTracker/ -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BarrelTracker</title>
+<title>BarrelTracker — v4.5.24</title>
 <script>
   // Single source of truth for displayed tool version
-  window.BT_APP = { name: "BarrelTracker", version: "4.5.23", channel: "release", build: "2026-01-04", debug: false };
+  window.BT_APP = { name: "BarrelTracker", version: "4.5.24", channel: "release", build: "2026-01-05", debug: false };
   document.title = `${window.BT_APP.name} — v${window.BT_APP.version}`;
   // Release build stamp
   window.BT_APP.tag = `v${window.BT_APP.version}` + (window.BT_APP.build ? ` (${window.BT_APP.build})` : "");
@@ -832,6 +832,93 @@ th[data-tip]{cursor:help;}
             .captureHeaderShim { position: relative !important; }
         </style><style id="ar11fa31b299astyle">
 				.ar11fa31b299ahidden{ position:absolute !important; opacity:0 !important; pointer-events:none !important}
+			</style><style>
+      .scoreCell{ cursor:pointer; text-decoration: underline dotted rgba(255,255,255,.25); text-underline-offset: 2px; }
+      .scoreCell:hover{ text-decoration-color: rgba(255,255,255,.55); }
+      .chip.impact{ font-weight:900; }
+      .chip.impact.good{ border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.12); color: rgba(220,252,231,.95); }
+      .chip.impact.neutral{ border-color: rgba(148,163,184,.28); background: rgba(148,163,184,.10); color: rgba(226,232,240,.92); }
+      .chip.impact.bad{ border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.12); color: rgba(254,226,226,.95); }
+      #guideOverlay{ display:none; }
+
+      /* Phase 4: column visibility */
+      .rankWrap{ overflow:auto; }
+      .rankWrap.hide-rank [data-col="rank"], .rankWrap.hide-rank th[data-col="rank"],
+      .rankWrap.hide-conf [data-col="conf"], .rankWrap.hide-conf th[data-col="conf"],
+      .rankWrap.hide-vert [data-col="vert"], .rankWrap.hide-vert th[data-col="vert"],
+      .rankWrap.hide-mr [data-col="mr"], .rankWrap.hide-mr th[data-col="mr"],
+      .rankWrap.hide-sd [data-col="sd"], .rankWrap.hide-sd th[data-col="sd"],
+      .rankWrap.hide-life [data-col="life"], .rankWrap.hide-life th[data-col="life"],
+      .rankWrap.hide-trend [data-col="trend"], .rankWrap.hide-trend th[data-col="trend"],
+      .rankWrap.hide-last [data-col="last"], .rankWrap.hide-last th[data-col="last"]{ display:none !important; }
+
+
+/* Trend popover (click Trend pill) */
+.pillTrend{ cursor:pointer; }
+.pillTrend:focus{ outline: 2px solid rgba(148,163,184,.45); outline-offset: 2px; }
+
+#trendPop{ position:fixed; inset:0; display:none; z-index: 99999; }
+#trendPop.show{ display:block; }
+#trendPop .trendCard{
+  position:fixed;
+  width: 340px;
+  max-width: calc(100vw - 24px);
+  border-radius: 18px;
+  border:1px solid rgba(148,163,184,.24);
+  background: rgba(2,6,23,.94);
+  box-shadow: 0 24px 80px rgba(0,0,0,.55);
+  padding: 14px 14px 12px;
+  color: rgba(226,232,240,.96);
+}
+#trendPop .trendHead{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+#trendPop .trendTitle{ font-size: 22px; font-weight: 900; letter-spacing: .2px; }
+#trendPop .trendClose{
+  border:1px solid rgba(148,163,184,.22);
+  background: rgba(148,163,184,.08);
+  color: rgba(226,232,240,.92);
+  border-radius: 12px;
+  height: 34px;
+  width: 34px;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+}
+#trendPop .trendClose:hover{ background: rgba(148,163,184,.12); }
+
+#trendPop .trendRow{ display:flex; align-items:center; gap:12px; }
+#trendPop .trendIcon{
+  width: 44px; height: 44px;
+  border-radius: 14px;
+  border:1px solid rgba(148,163,184,.22);
+  background: rgba(148,163,184,.08);
+  display:grid; place-items:center;
+  font-weight: 900;
+}
+#trendPop .trendIcon.good{ border-color: rgba(34,197,94,.32); background: rgba(34,197,94,.10); color: rgba(220,252,231,.95); }
+#trendPop .trendIcon.bad{  border-color: rgba(239,68,68,.32); background: rgba(239,68,68,.10); color: rgba(254,226,226,.95); }
+#trendPop .trendIcon.neutral{ border-color: rgba(148,163,184,.26); background: rgba(148,163,184,.08); color: rgba(226,232,240,.92); }
+
+#trendPop .trendSpark{ width: 240px; height: 56px; display:block; }
+#trendPop .sparkPath{ fill:none; stroke: rgba(148,163,184,.85); stroke-width:3; stroke-linecap:round; }
+#trendPop .sparkDot{ fill: rgba(226,232,240,.92); }
+#trendPop .sparkPath.good{ stroke: rgba(34,197,94,.9); }
+#trendPop .sparkPath.bad{  stroke: rgba(239,68,68,.9); }
+#trendPop .sparkPath.neutral{ stroke: rgba(148,163,184,.85); }
+#trendPop .trendText{ margin-top: 10px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+
+/* Columns modal */
+      #colsOverlay{ display:none; }
+      .colsGrid{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; }
+      .colsGrid label{ display:flex; gap:10px; align-items:center; padding:10px; border-radius:12px;
+        border:1px solid rgba(148,163,184,.22); background: rgba(148,163,184,.06); }
+      .colsGrid input{ transform: translateY(1px); }
+      .colsHint{ color: var(--muted); font-size: 12px; margin-top: 8px; }
+</style><style>
+            .captureFixedShim { position: absolute !important; }
+            .captureStickyShim { position: static !important; }
+            .captureHeaderShim { position: relative !important; }
+        </style><link href="./BarrelTracker — v4.5.24_files/css2" rel="stylesheet"><style id="ar2f2dae4ad6style">
+				.ar2f2dae4ad6hidden{ position:absolute !important; opacity:0 !important; pointer-events:none !important}
 			</style></head>
 <body data-mode="timeline" class="">
   <div class="wrap">
@@ -839,10 +926,10 @@ th[data-tip]{cursor:help;}
   <div class="suiteHeader__left">
     <div class="suiteHeader__topline">
       <div class="suiteHeader__title">BarrelTracker</div>
-      <div class="suiteHeader__pill" id="pillVersion">v4.5.26</div>
+      <div class="suiteHeader__pill" id="pillVersion">v4.5.24</div>
       <div class="suiteHeader__pill suiteHeader__pill--muted">standalone</div>
     </div>
-    <div class="suiteHeader__tagline">Offline barrel performance tracker (v4.5.26) — import sessions, rank barrels, review trends.</div>
+    <div class="suiteHeader__tagline">Offline barrel performance tracker (v4.5.24) — import sessions, rank barrels, review trends.</div>
   </div>
   <div class="suiteHeader__right">
     <div class="suiteHeader__actions">
@@ -965,17 +1052,32 @@ th[data-tip]{cursor:help;}
           </thead>
           <tbody id="rankBody"><tr class="row" style="outline: rgba(99, 102, 241, 0.35) solid 2px; outline-offset: -2px;">
           <td data-col="idx">1</td>
-          <td data-col="barrel" class="barrel">Brux</td>
+          <td data-col="barrel" class="barrel">Brux-02</td>
+          <td data-col="rank"><b>42.0</b></td>
+          <td data-col="conf"><span class="conf high" data-tip="Confidence: High">High</span></td>
+          <td data-col="vert">0.67</td>
+          <td data-col="mr">0.22</td>
+          <td data-col="sd">11.3</td>
+          <td data-col="life">1254</td>
+          <td data-col="trend"><button type="button" class="trendMini trend down" data-trend="Brux-02" data-tip="Trend: Down"><span class="trendwrap"><span class="arrow">▼</span><svg class="spark" viewBox="0 0 80 18" aria-hidden="true">
+                <path d="M2 4 L16 6 L30 8 L44 10 L58 12 L72 14"></path>
+                <circle class="dot" cx="72" cy="14" r="2.5"></circle>
+              </svg></span></button></td>
+          <td data-col="last" class="lastCol"><div class="lsTop" data-tip="Oct 11, 2025 — SM_shotslog_Oct
+Oct 11">Oct 11, 2025 — SM_shotslog_Oct</div><div class="lsSub">Oct 11</div></td>
+        </tr><tr class="row">
+          <td data-col="idx">2</td>
+          <td data-col="barrel" class="barrel">Brux-01</td>
           <td data-col="rank" class="muted">—</td>
           <td data-col="conf" class="muted">—</td>
           <td data-col="vert" class="muted">—</td>
           <td data-col="mr" class="muted">—</td>
           <td data-col="sd" class="muted">—</td>
-          <td data-col="life">0</td>
+          <td data-col="life">400</td>
           <td data-col="trend" class="muted">—</td>
           <td data-col="last" class="muted">—</td>
         </tr><tr class="row">
-          <td data-col="idx">2</td>
+          <td data-col="idx">3</td>
           <td data-col="barrel" class="barrel">Brux-1</td>
           <td data-col="rank" class="muted">—</td>
           <td data-col="conf" class="muted">—</td>
@@ -986,7 +1088,7 @@ th[data-tip]{cursor:help;}
           <td data-col="trend" class="muted">—</td>
           <td data-col="last" class="muted">—</td>
         </tr><tr class="row">
-          <td data-col="idx">3</td>
+          <td data-col="idx">4</td>
           <td data-col="barrel" class="barrel">Brux-2</td>
           <td data-col="rank" class="muted">—</td>
           <td data-col="conf" class="muted">—</td>
@@ -997,7 +1099,7 @@ th[data-tip]{cursor:help;}
           <td data-col="trend" class="muted">—</td>
           <td data-col="last" class="muted">—</td>
         </tr><tr class="row">
-          <td data-col="idx">4</td>
+          <td data-col="idx">5</td>
           <td data-col="barrel" class="barrel">Krieger-1</td>
           <td data-col="rank" class="muted">—</td>
           <td data-col="conf" class="muted">—</td>
@@ -1008,7 +1110,7 @@ th[data-tip]{cursor:help;}
           <td data-col="trend" class="muted">—</td>
           <td data-col="last" class="muted">—</td>
         </tr><tr class="row">
-          <td data-col="idx">5</td>
+          <td data-col="idx">6</td>
           <td data-col="barrel" class="barrel">Krieger-2</td>
           <td data-col="rank" class="muted">—</td>
           <td data-col="conf" class="muted">—</td>
@@ -1027,11 +1129,11 @@ th[data-tip]{cursor:help;}
       <div class="card" id="detailCard">
         <div class="cardHead">
           <div>
-            <h3 id="detailTitle">Brux — Timeline</h3>
-            <div class="small" id="detailSub">No sessions yet</div>
+            <h3 id="detailTitle">Brux-02 — Timeline</h3>
+            <div class="small" id="detailSub">Current form window: last 800 rounds · Confidence: High</div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
-            <div class="small" id="detailMeta">Life: 0 rds</div>
+            <div class="small" id="detailMeta">Life: 1254 rds</div>
             <div id="detailActions" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
       <button class="btn sm primary" id="btnOpenImport">Import</button>
       <button class="btn sm" id="btnOpenManual">+ Manual</button>
@@ -1040,12 +1142,87 @@ th[data-tip]{cursor:help;}
           </div>
         </div>
         <div class="cardBody" id="detailBody">
-    <div class="mini">
-      No sessions yet for this barrel.
-      <br><br>
-      Use <b>+ Add session</b> to enter a manual session (imports get wired after).
+      <div class="sessionRow" data-sid="S_1767586453768_ac306bf6872cd8">
+        <div class="rowTop">
+          <div class="sessionTitle">Oct 11, 2025 — SM_shotslog_Oct</div>
+          <button class="iconBtn" data-action="edit" data-sid="S_1767586453768_ac306bf6872cd8" data-tip="Edit session">✎</button>
+        </div>
+        <div class="chips"><span class="chip sighters">Record</span><span class="chip">20/22</span><span class="chip">Vert 0.56 MOA</span><span class="chip">MR 0.19 MOA</span><span class="chip">SD 10.8 fps</span><span class="chip conf high" data-tip="Confidence: High — trust in the data (sample size + consistency + data quality). It scales Rank; it doesn’t “create” performance.">High</span><span class="chip impact good" data-tip="Session impact vs rolling baseline: improved Vert by ≥0.05 MOA and did not increase SD.">🟢 Helped barrel</span></div>
+        <div class="fileLine">SM_shotslog_Oct.csv (T1) + Rifle_Bullet_2025-10-11_09-08-06.csv</div>
+      </div>
+    
+      <div class="sessionRow" data-sid="S_1767586453769_0c0cc00b2f858">
+        <div class="rowTop">
+          <div class="sessionTitle">Oct 11, 2025 — SM_shotslog_Oct</div>
+          <button class="iconBtn" data-action="edit" data-sid="S_1767586453769_0c0cc00b2f858" data-tip="Edit session">✎</button>
+        </div>
+        <div class="chips"><span class="chip sighters">Record</span><span class="chip">20/22</span><span class="chip">Vert 0.68 MOA</span><span class="chip">MR 0.22 MOA</span><span class="chip">SD 9.9 fps</span><span class="chip conf high" data-tip="Confidence: High — trust in the data (sample size + consistency + data quality). It scales Rank; it doesn’t “create” performance.">High</span><span class="chip impact neutral" data-tip="Session impact vs rolling baseline: within the noise band (no clear improvement/regression).">⚪ Neutral</span></div>
+        <div class="fileLine">SM_shotslog_Oct.csv (T2) + Rifle_Bullet_2025-10-11_09-49-30.csv</div>
+      </div>
+    
+      <div class="sessionRow" data-sid="S_1767586453769_1c49cf78ea693">
+        <div class="rowTop">
+          <div class="sessionTitle">Oct 11, 2025 — SM_shotslog_Oct</div>
+          <button class="iconBtn" data-action="edit" data-sid="S_1767586453769_1c49cf78ea693" data-tip="Edit session">✎</button>
+        </div>
+        <div class="chips"><span class="chip sighters">Record</span><span class="chip">20/26</span><span class="chip">Vert 0.86 MOA</span><span class="chip">MR 0.25 MOA</span><span class="chip">SD 29.0 fps</span><span class="chip conf high" data-tip="Confidence: High — trust in the data (sample size + consistency + data quality). It scales Rank; it doesn’t “create” performance.">High</span><span class="chip impact bad" data-tip="Session impact vs rolling baseline: worsened Vert by ≥0.05 MOA and increased SD by ≥0.5 fps.">🔴 Hurt confidence</span></div>
+        <div class="fileLine">SM_shotslog_Oct.csv (T3) + Rifle_Bullet_2025-10-11_08-19-43.xls</div>
+      </div>
+    
+      <div class="sessionRow" data-sid="S_1767566247547_4e4be750489238">
+        <div class="rowTop">
+          <div class="sessionTitle">Sep 25, 2025 — SM_shotslog_Dec_18</div>
+          <button class="iconBtn" data-action="edit" data-sid="S_1767566247547_4e4be750489238" data-tip="Edit session">✎</button>
+        </div>
+        <div class="chips"><span class="chip sighters">Record</span><span class="chip">20/22</span><span class="chip">Vert 0.57 MOA</span><span class="chip">MR 0.22 MOA</span><span class="chip">SD 9.9 fps</span><span class="chip conf high" data-tip="Confidence: High — trust in the data (sample size + consistency + data quality). It scales Rank; it doesn’t “create” performance.">High</span><span class="chip impact good" data-tip="Session impact vs rolling baseline: improved Vert by ≥0.05 MOA and did not increase SD.">🟢 Helped barrel</span></div>
+        <div class="fileLine">SM_shotslog_Dec_18.csv (T1) + Rifle_Bullet_2025-09-25_08-10-02.csv</div>
+      </div>
+    
+      <div class="sessionRow" data-sid="S_1767566247547_98aa02b1c7eb98">
+        <div class="rowTop">
+          <div class="sessionTitle">Sep 25, 2025 — SM_shotslog_Dec_18</div>
+          <button class="iconBtn" data-action="edit" data-sid="S_1767566247547_98aa02b1c7eb98" data-tip="Edit session">✎</button>
+        </div>
+        <div class="chips"><span class="chip sighters">Record</span><span class="chip">20/22</span><span class="chip">Vert 0.57 MOA</span><span class="chip">MR 0.21 MOA</span><span class="chip">SD 6.4 fps</span><span class="chip conf high" data-tip="Confidence: High — trust in the data (sample size + consistency + data quality). It scales Rank; it doesn’t “create” performance.">High</span><span class="chip impact good" data-tip="Session impact vs rolling baseline: improved Vert by ≥0.05 MOA and did not increase SD.">🟢 Helped barrel</span></div>
+        <div class="fileLine">SM_shotslog_Dec_18.csv (T2) + Rifle_Bullet_2025-09-07_08-10-13.csv</div>
+      </div>
+    
+      <div class="sessionRow" data-sid="S_1767566247547_23855feac9a2b8">
+        <div class="rowTop">
+          <div class="sessionTitle">Sep 25, 2025 — SM_shotslog_Dec_18</div>
+          <button class="iconBtn" data-action="edit" data-sid="S_1767566247547_23855feac9a2b8" data-tip="Edit session">✎</button>
+        </div>
+        <div class="chips"><span class="chip sighters">Record</span><span class="chip">20/22</span><span class="chip">Vert 0.83 MOA</span><span class="chip">MR 0.21 MOA</span><span class="chip">SD 9.5 fps</span><span class="chip conf high" data-tip="Confidence: High — trust in the data (sample size + consistency + data quality). It scales Rank; it doesn’t “create” performance.">High</span><span class="chip impact neutral" data-tip="Session impact vs rolling baseline: within the noise band (no clear improvement/regression).">⚪ Neutral</span></div>
+        <div class="fileLine">SM_shotslog_Dec_18.csv (T3) + Rifle_Bullet_2025-09-13_11-45-46.csv</div>
+      </div>
+    
+      <div class="sessionRow" data-sid="S_1767586453768_ba08993284cf7">
+        <div class="rowTop">
+          <div class="sessionTitle">Sep 25, 2025 — SM_shotslog_Dec_18</div>
+          <button class="iconBtn" data-action="edit" data-sid="S_1767586453768_ba08993284cf7" data-tip="Edit session">✎</button>
+        </div>
+        <div class="chips"><span class="chip sighters">Record</span><span class="chip">20/22</span><span class="chip">Vert 0.57 MOA</span><span class="chip">MR 0.22 MOA</span><span class="chip">SD 9.9 fps</span><span class="chip conf high" data-tip="Confidence: High — trust in the data (sample size + consistency + data quality). It scales Rank; it doesn’t “create” performance.">High</span><span class="chip impact good" data-tip="Session impact vs rolling baseline: improved Vert by ≥0.05 MOA and did not increase SD.">🟢 Helped barrel</span></div>
+        <div class="fileLine">SM_shotslog_Dec_18.csv (T1) + Rifle_Bullet_2025-09-25_08-10-02.csv</div>
+      </div>
+    
+      <div class="sessionRow" data-sid="S_1767586453768_f2d8bbd1f56cb8">
+        <div class="rowTop">
+          <div class="sessionTitle">Sep 25, 2025 — SM_shotslog_Dec_18</div>
+          <button class="iconBtn" data-action="edit" data-sid="S_1767586453768_f2d8bbd1f56cb8" data-tip="Edit session">✎</button>
+        </div>
+        <div class="chips"><span class="chip sighters">Record</span><span class="chip">20/22</span><span class="chip">Vert 0.57 MOA</span><span class="chip">MR 0.21 MOA</span><span class="chip">SD 6.4 fps</span><span class="chip conf high" data-tip="Confidence: High — trust in the data (sample size + consistency + data quality). It scales Rank; it doesn’t “create” performance.">High</span><span class="chip impact good" data-tip="Session impact vs rolling baseline: improved Vert by ≥0.05 MOA and did not increase SD.">🟢 Helped barrel</span></div>
+        <div class="fileLine">SM_shotslog_Dec_18.csv (T2) + Rifle_Bullet_2025-09-07_08-10-13.csv</div>
+      </div>
+    
+      <div class="sessionRow" data-sid="S_1767586453768_a5ab6ddaf6d6d8">
+        <div class="rowTop">
+          <div class="sessionTitle">Sep 25, 2025 — SM_shotslog_Dec_18</div>
+          <button class="iconBtn" data-action="edit" data-sid="S_1767586453768_a5ab6ddaf6d6d8" data-tip="Edit session">✎</button>
+        </div>
+        <div class="chips"><span class="chip sighters">Record</span><span class="chip">20/22</span><span class="chip">Vert 0.83 MOA</span><span class="chip">MR 0.21 MOA</span><span class="chip">SD 9.5 fps</span><span class="chip conf high" data-tip="Confidence: High — trust in the data (sample size + consistency + data quality). It scales Rank; it doesn’t “create” performance.">High</span><span class="chip impact neutral" data-tip="Session impact vs rolling baseline: within the noise band (no clear improvement/regression).">⚪ Neutral</span></div>
+        <div class="fileLine">SM_shotslog_Dec_18.csv (T3) + Rifle_Bullet_2025-09-13_11-45-46.csv</div>
+      </div>
     </div>
-  </div>
       </div>
 
 
@@ -1078,7 +1255,7 @@ th[data-tip]{cursor:help;}
       <div class="modalBody">
         <div class="card" style="margin-bottom:14px;">
           <div class="cardHead" style="display:flex;align-items:center;justify-content:space-between;">
-            <div><b>What’s new</b> <span class="small" style="color:var(--muted);" id="whatsNewVer">v4.5.26</span></div>
+            <div><b>What’s new</b> <span class="small" style="color:var(--muted);" id="whatsNewVer">v4.5.24</span></div>
             <button class="btn sm" id="btnSupportBundle" data-tip="Exports extra diagnostics to help debug issues">Export support bundle</button>
           </div>
           <div class="small" style="color:var(--muted);line-height:1.45;">
@@ -1111,7 +1288,7 @@ th[data-tip]{cursor:help;}
         <div class="footerNote">Tip: click a Score to see the full breakdown. Click a row to open the barrel timeline.</div>
       </div>
       <div class="modalFoot">
-        <div class="mini">v4.5.26 • local-only</div>
+        <div class="mini">v4.5.24 • local-only</div>
         <div>
           <button class="btn" id="btnGuideOk">Close</button>
         </div>
@@ -2553,6 +2730,8 @@ return blocks
       sourceFile: filename,
       label,
       timeMs,
+      sessionLine: b.sessionLine || null,
+      targetLabel: b.targetLabel || null,
       headers: b.headers || [],
       rows: b.rows || []
     };
@@ -3460,7 +3639,7 @@ function parseDateTimeFromFilename(name){
           const isSighters = detectSightersFromShotMarkerBlock({ label: g.label || f.name, fileName: f.name, headers, rows: parsed.rows });
 const t = {
             id: `SM_${slugify(f.name)}_${gi+1}`,
-            fileName: (groups.length>1 ? `${f.name} (T${gi+1})` : f.name),
+            fileName: (groups.length>1 ? `${f.name} (${(g.targetLabel || ("T"+(gi+1)))})` : f.name),
             sourceFile: f.name,
             label: g.label || f.name,
             timeMs: g.timeMs || null,
@@ -6071,4 +6250,320 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideTrendP
 
 
 
-</body></html>
+
+<div id="uiTooltip" class="uiTooltip" style="display: none;"></div><div id="confirmOverlay" class="confirmOverlay" style="display: none;">
+      <div class="confirmCard" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+        <div class="confirmTitle" id="confirmTitle">Restore autosave?</div>
+        <div class="confirmMsg" id="confirmMsg">Restore your last autosave from 1/4/2026, 9:14:14 PM?
+
+Barrels: 6
+Sessions: 9
+
+(You can also ignore this and continue.)</div>
+        <div class="confirmActions">
+          <button class="btn sm" id="btnConfirmCancel">Not now</button>
+          <button class="btn sm primary" id="btnConfirmOK">Restore</button>
+        </div>
+      </div>
+    </div><div id="twc-ssr-ioo-phe" style="position: fixed; top: 0px; left: 0px; width: 100%; height: 100%; z-index: 10000; pointer-events: none;"><template shadowrootmode="open"><div>
+        <style>* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Lato', sans-serif;
+}
+
+button {
+    padding: 0;
+    border: none;
+    font: inherit;
+    color: inherit;
+    background-color: transparent;
+    cursor: pointer;
+}
+
+#shortcut-selected,
+#shortcut-visible {
+    position: absolute;
+    top: 15px;
+    right: 335px;
+}
+
+.tooltip{
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    color: #ffffff;
+    gap: 16px;
+    width: 365px;
+    padding: 25px;
+    background-color: #212121;
+    border-radius: 10px;
+    box-shadow: 0px 0px 20px 0px rgba(185, 185, 185, 0.6);
+    z-index: 1000;
+    pointer-events: auto;
+}
+
+.tooltip__header{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tooltip__icon{
+    height: 20px;
+    width: 20px;
+}
+
+.tooltip__title{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tooltip__title h3{
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.tooltip__close{
+    padding: 0;
+    margin: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tooltip__content{
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.tooltip__subtitle{
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.tooltip__stats{
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.tooltip__actions{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.tooltip__settings{
+    border: 1px solid #212121;
+    padding: 6px 0;
+    border-radius: 5px;
+    color: #D5D5D5;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding-left: 5px;
+}
+
+.tooltip__settings:hover{
+    border: 1px solid #06DFC9;
+    color: #ffffff;
+}
+
+.tooltip__settings:hover img,
+.tooltip__settings-text:hover{
+    filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(7500%) hue-rotate(56deg) brightness(97%) contrast(107%);
+}
+
+.tooltip__confirm{
+    background: #06DFC9;
+    border: 1px solid #06DFC9;
+    padding: 6px 0;
+    border-radius: 5px;
+    color: #212121;
+    width: 100%;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.tooltip__confirm:hover{
+    border: 1px solid #05AD9C;
+    background: #05AD9C;
+}
+
+.tooltip__confirm:active{
+    background: #05AD9C;
+    color: #ffffff;
+}
+
+.tooltip--arrow-top::before{
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-bottom: 15px solid #212121;
+}
+
+.tooltip--arrow-left::before{
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -10px;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 15px solid transparent;
+    border-bottom: 15px solid transparent;
+    border-right: 15px solid #212121;
+}
+
+.tooltip--arrow-right::after{
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: -10px;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 15px solid transparent;
+    border-bottom: 15px solid transparent;
+    border-left: 15px solid #212121;
+}
+
+.hidden{
+    display: none;
+}</style>
+        
+            <div id="shortcut-selected" class="tooltip tooltip--arrow-top hidden">
+                <div class="tooltip__header">
+                    <div class="tooltip__title">
+                        <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/badge-emblem.svg" alt="badge-emblem icon" class="tooltip__icon"><img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/selected.svg" alt="selected icon" class="tooltip__icon">
+                        <h3 class="tooltip__title">Alt + Shift + S</h3>
+                    </div>
+                    <button class="tooltip__close">
+                        <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/close.svg" alt="close-icon">
+                    </button>
+                </div>
+    
+                <div class="tooltip__content">
+                    <p class="tooltip__subtitle">Shortcut for <strong>Selected Area</strong> screenshot</p>
+                    <p class="tooltip__stats">57% of SimpleSnap users capture with shortcut</p> 
+                </div>
+    
+                
+        <div class="tooltip__actions">
+            <button class="tooltip__settings">
+                <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/settings.svg" alt="settings-icon">
+                <p class="tooltip__settings-text">Settings</p>
+            </button>
+            <button class="tooltip__confirm">Got it</button>
+        </div>
+            </div>
+        
+            <div id="shortcut-visible" class="tooltip tooltip--arrow-top hidden">
+                <div class="tooltip__header">
+                    <div class="tooltip__title">
+                        <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/badge-emblem.svg" alt="badge-emblem icon" class="tooltip__icon"><img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/viewport-route.svg" alt="viewport-route icon" class="tooltip__icon">
+                        <h3 class="tooltip__title">Alt + Shift + V</h3>
+                    </div>
+                    <button class="tooltip__close">
+                        <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/close.svg" alt="close-icon">
+                    </button>
+                </div>
+    
+                <div class="tooltip__content">
+                    <p class="tooltip__subtitle">Shortcut for <strong>Visible Area</strong> screenshot</p>
+                    <p class="tooltip__stats">58% of SimpleSnap users capture with shortcut</p> 
+                </div>
+    
+                
+        <div class="tooltip__actions">
+            <button class="tooltip__settings">
+                <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/settings.svg" alt="settings-icon">
+                <p class="tooltip__settings-text">Settings</p>
+            </button>
+            <button class="tooltip__confirm">Got it</button>
+        </div>
+            </div>
+        
+            <div id="lines" class="tooltip tooltip--arrow-left hidden">
+                <div class="tooltip__header">
+                    <div class="tooltip__title">
+                        <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/ui.svg" alt="ui icon" class="tooltip__icon">
+                        <h3 class="tooltip__title">Lines and Arrows</h3>
+                    </div>
+                    <button class="tooltip__close">
+                        <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/close.svg" alt="close-icon">
+                    </button>
+                </div>
+    
+                <div class="tooltip__content">
+                    <p class="tooltip__subtitle">Draw arrows and lines - straight or freehand, select color and line width here.</p>
+                    <p class="tooltip__stats">Most users start their edits here.</p> 
+                </div>
+    
+                
+            </div>
+        
+            <div id="crop" class="tooltip tooltip--arrow-left hidden">
+                <div class="tooltip__header">
+                    <div class="tooltip__title">
+                        <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/selected.svg" alt="selected icon" class="tooltip__icon">
+                        <h3 class="tooltip__title">Crop</h3>
+                    </div>
+                    <button class="tooltip__close">
+                        <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/close.svg" alt="close-icon">
+                    </button>
+                </div>
+    
+                <div class="tooltip__content">
+                    <p class="tooltip__subtitle">You can trim your screenshot to focus on a specific area — just select the zone you want to keep, and the rest will be cropped out</p>
+                    <p class="tooltip__stats">A useful feature many users overlook.</p> 
+                </div>
+    
+                
+            </div>
+        
+            <div id="undo" class="tooltip tooltip--arrow-right hidden">
+                <div class="tooltip__header">
+                    <div class="tooltip__title">
+                        <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/undo-arrow.svg" alt="undo-arrow icon" class="tooltip__icon">
+                        <h3 class="tooltip__title">Undo anytime</h3>
+                    </div>
+                    <button class="tooltip__close">
+                        <img src="chrome-extension://nbljjljaoanknannhlonmaknhckcoldi/resources/graphics/close.svg" alt="close-icon">
+                    </button>
+                </div>
+    
+                <div class="tooltip__content">
+                    <p class="tooltip__subtitle">Cancel edits and return to the previous appearance of screenshot.</p>
+                    <p class="tooltip__stats">Right menu allows you to manage history of changes.</p> 
+                </div>
+    
+                
+            </div>
+        
+    </div></template></div><div id="capture-shell-npg1ku" data-snapoverlay="true" style="display: none;"><template shadowrootmode="open"><style>
+    .captureShadeLayer {
+        position: fixed; top: 0; width: 100%; left: 0; background: rgba(255, 255, 255, 0.22); height: 100%; cursor: crosshair; z-index: 2147483647;
+    }
+    .captureSelectionFrame {
+        cursor: crosshair; z-index: 2147483647; border: 3px dashed #06DFC9; position: fixed; background-color: rgba(38, 37, 37, 0.69);
+    }</style></template></div><div id="toastHost" class="toastHost" aria-live="polite"></div></body></html>
