@@ -1,5 +1,5 @@
 ## Live app
-https://mrimp.github.io/BarrelTracker/
+- **Open:** https://mrimp.github.io/BarrelTracker/
 
 # BarrelTracker
 
@@ -24,3 +24,4 @@ performance over time using real match and practice data.
 - Everything stays local
 - Manual entry exists as a fallback, not the primary workflow
 - Designed for long-range / F-Class style evaluation
+
