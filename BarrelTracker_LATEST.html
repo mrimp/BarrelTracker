@@ -24,38 +24,59 @@
       window.BT_NET = BT_NET;
 
       const log = (type, url, meta) => {
+        // We only log *blocked network* attempts (http/https/ws/wss), so Self-Test can say “no network calls”.
         try{ calls.push({ ts: new Date().toISOString(), type, url: String(url||""), meta: meta||null }); }catch{}
       };
 
-      // fetch
+      const __bt_proto = (u) => {
+        try{
+          const s = (u && typeof u === "object" && "url" in u) ? String(u.url) : String(u||"");
+          return new URL(s, window.location.href).protocol;
+        }catch{
+          return "";
+        }
+      };
+      const __bt_is_net = (proto) => proto === "http:" || proto === "https:" || proto === "ws:" || proto === "wss:";
+
+      // fetch (allow data:/blob:/file:; block http/https/ws/wss including same-origin)
       if (typeof window.fetch === "function" && !window.fetch._bt_offline){
         const _fetch = window.fetch.bind(window);
         function offlineFetch(resource, init){
-          log("fetch", resource, { method: (init && init.method) || "GET" });
-          return Promise.reject(new Error("Offline mode: network calls are disabled (fetch)."));
+          const proto = __bt_proto(resource);
+          if (__bt_is_net(proto)){
+            log("fetch", (resource && resource.url) ? resource.url : resource, { method: (init && init.method) || "GET" });
+            return Promise.reject(new Error("Offline mode: network calls are disabled (fetch)."));
+          }
+          return _fetch(resource, init);
         }
         offlineFetch._bt_offline = true;
         offlineFetch._bt_original = _fetch;
         window.fetch = offlineFetch;
       }
 
-      // XMLHttpRequest
+      // XMLHttpRequest (allow non-network protocols; block http/https)
       if (typeof XMLHttpRequest !== "undefined" && XMLHttpRequest.prototype && !XMLHttpRequest.prototype.send._bt_offline){
         const _open = XMLHttpRequest.prototype.open;
         const _send = XMLHttpRequest.prototype.send;
         XMLHttpRequest.prototype.open = function(method, url){
-          try{ this.__bt_method = method; this.__bt_url = url; }catch{}
+          try{
+            this.__bt_method = method; this.__bt_url = url;
+            this.__bt_proto = __bt_proto(String(url||""));
+          }catch{}
           return _open.apply(this, arguments);
         };
         XMLHttpRequest.prototype.send = function(){
-          log("xhr", this.__bt_url, { method: this.__bt_method || "" });
-          throw new Error("Offline mode: network calls are disabled (XMLHttpRequest)." );
+          if (__bt_is_net(this.__bt_proto)){
+            log("xhr", this.__bt_url, { method: this.__bt_method || "" });
+            throw new Error("Offline mode: network calls are disabled (XMLHttpRequest)." );
+          }
+          return _send.apply(this, arguments);
         };
         XMLHttpRequest.prototype.send._bt_offline = true;
         XMLHttpRequest.prototype.send._bt_original = _send;
       }
 
-      // WebSocket
+      // WebSocket (always network)
       if (typeof window.WebSocket === "function" && !window.WebSocket._bt_offline){
         const _WS = window.WebSocket;
         function OfflineWebSocket(url){
@@ -71,12 +92,16 @@
         window.WebSocket = OfflineWebSocket;
       }
 
-      // sendBeacon
+      // sendBeacon (block http/https)
       if (navigator && typeof navigator.sendBeacon === "function" && !navigator.sendBeacon._bt_offline){
         const _sb = navigator.sendBeacon.bind(navigator);
         function offlineSendBeacon(url, data){
-          log("beacon", url, { bytes: (data && (data.size || data.byteLength)) || null });
-          return false;
+          const proto = __bt_proto(String(url||""));
+          if (__bt_is_net(proto)){
+            log("beacon", url, { bytes: (data && (data.size || data.byteLength)) || null });
+            return false;
+          }
+          try{ return _sb(url, data); }catch{ return false; }
         }
         offlineSendBeacon._bt_offline = true;
         offlineSendBeacon._bt_original = _sb;
@@ -6172,10 +6197,7 @@ const elChkSighters = $("chkSighters");
         if (!ok2){ toast("Bundle export payload is invalid.", "error"); return; }
 
         const replace = await confirmDialog(
-          "Import portable bundle:
-
-OK = REPLACE current barrels + sessions
-Cancel = MERGE (keep existing, add/overwrite by id)",
+          `Import portable bundle:\n\nOK = REPLACE current barrels + sessions\nCancel = MERGE (keep existing, add/overwrite by id)`,
           { title: "Import portable bundle", okText: "Replace", cancelText: "Merge" }
         );
 
