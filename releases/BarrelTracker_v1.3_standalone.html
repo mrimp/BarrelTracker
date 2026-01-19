@@ -1,0 +1,1270 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>BarrelTracker (Companion to NodeLab) • v0.1</title>
+  <style>
+    :root{
+      --bg:#0b0f19; --panel:#11182a; --panel2:#0f1526; --text:#e7eefc; --muted:#a9b6d3;
+      --border:rgba(255,255,255,.10); --accent:#7c5cff; --good:#37d67a; --warn:#ffcc66; --bad:#ff5c7a;
+      --shadow: 0 12px 30px rgba(0,0,0,.45);
+      --radius:18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(1200px 800px at 20% 0%, rgba(124,92,255,.25), transparent 50%),
+                          radial-gradient(900px 600px at 80% 10%, rgba(55,214,122,.18), transparent 50%),
+                          var(--bg);
+         color:var(--text); font-family:var(--sans);}
+    .wrap{max-width:1100px;margin:0 auto;padding:18px 16px 28px;}
+    header{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding:14px 14px;border:1px solid var(--border);background:linear-gradient(180deg, rgba(124,92,255,.14), rgba(17,24,42,.65));
+      border-radius:var(--radius); box-shadow: var(--shadow);
+    }
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{
+      width:42px;height:42px;border-radius:14px; background:linear-gradient(135deg, rgba(124,92,255,.95), rgba(55,214,122,.85));
+      display:grid;place-items:center; box-shadow:0 10px 25px rgba(124,92,255,.25);
+      font-weight:800;
+    }
+    .hgroup{line-height:1.15}
+    .title{font-size:18px;font-weight:800}
+    .sub{font-size:12px;color:var(--muted)}
+    .btn{
+      border:1px solid var(--border); background:rgba(255,255,255,.06); color:var(--text);
+      padding:10px 12px;border-radius:14px; cursor:pointer; font-weight:700;
+    }
+    .btn:hover{background:rgba(255,255,255,.10)}
+    .btn.primary{border-color:rgba(124,92,255,.55); background:rgba(124,92,255,.18)}
+    .btn.danger{border-color:rgba(255,92,122,.45); background:rgba(255,92,122,.12)}
+    .row{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px}
+    .col{flex:1 1 360px}
+    .card{
+      border:1px solid var(--border); background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border-radius:var(--radius); padding:14px; box-shadow: var(--shadow);
+    }
+    .card h3{margin:0 0 8px 0; font-size:14px; color:var(--muted); font-weight:800; letter-spacing:.02em}
+    .grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+    @media (max-width: 980px){ .grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+    .bcard{overflow:hidden;position:relative;
+      border:1px solid var(--border); background:linear-gradient(180deg, rgba(17,24,42,.85), rgba(17,24,42,.55));
+      border-radius:18px; padding:12px; cursor:pointer;
+      transition: transform .08s ease, background .12s ease, border-color .12s ease;
+    }
+    .bcard:hover{transform:translateY(-1px); border-color:rgba(124,92,255,.35); background:linear-gradient(180deg, rgba(124,92,255,.16), rgba(17,24,42,.55));}
+    .btop{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .btop > div{min-width:0}
+
+    .bhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+    .bdetails{display:block}
+
+    .bid{font-weight:900; font-size:18px}
+    .bhead .bid{flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+    .pill{display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;padding:4px 8px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--muted);white-space:nowrap;min-width:90px;max-width:130px}
+
+        .bid.big{font-size:34px;letter-spacing:-0.02em}
+
+    .metric{margin-top:10px; display:flex; gap:10px; flex-wrap:wrap}
+    .mitem{flex:1 1 110px; padding:10px;border-radius:14px; border:1px solid var(--border); background:rgba(255,255,255,.04)}
+    .mitem .k{font-size:11px;color:var(--muted);font-weight:800}
+    .mitem .v{margin-top:6px;font-size:15px;font-weight:900}
+    .bar{height:8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--border);overflow:hidden;margin-top:10px}
+    .bar > div{height:100%;background:linear-gradient(90deg, rgba(55,214,122,.9), rgba(124,92,255,.9)); width:0%}
+    .drop{
+      border:1.5px dashed rgba(124,92,255,.45);
+      background:rgba(124,92,255,.08);
+      border-radius:18px; padding:14px; text-align:center;
+    }
+    .drop strong{display:block;margin-bottom:6px}
+    .hint{font-size:12px;color:var(--muted); line-height:1.45}
+    input[type=file]{display:none}
+    .table{width:100%; border-collapse:separate; border-spacing:0; overflow:hidden; border-radius:16px; border:1px solid var(--border); }
+    .table th, .table td{padding:10px 10px;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px}
+    .table th{color:var(--muted);text-align:left;background:rgba(255,255,255,.04);font-weight:900}
+    .table tr:hover td{background:rgba(255,255,255,.03)}
+    .table td.mono{font-family:var(--mono); color:var(--muted)}
+    .split{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:10px 0}
+    .tiny{font-size:11px;color:var(--muted)}
+    .modal{
+      position:fixed; inset:0; background:rgba(0,0,0,.55);
+      display:none; align-items:flex-end; justify-content:center; padding:18px;
+    }
+    .modal.open{display:flex}
+    .sheet{
+      width:min(1100px, 100%); max-height:88vh; overflow:auto;
+      border:1px solid var(--border); background:linear-gradient(180deg, rgba(17,24,42,.98), rgba(12,16,28,.98));
+      border-radius:22px; box-shadow: var(--shadow);
+      padding:14px;
+    }
+    .sheetHead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
+    .sheetTitle{font-weight:1000;font-size:18px}
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.05);font-size:12px;color:var(--muted)}
+    .dot{width:8px;height:8px;border-radius:50%}
+    .dot.good{background:var(--good)}
+    .dot.warn{background:var(--warn)}
+    .dot.bad{background:var(--bad)}
+    .footer{margin-top:12px;font-size:12px;color:var(--muted);line-height:1.45}
+  
+    .chartRow{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+    .chartCard{flex:1 1 360px;border:1px solid var(--border);background:rgba(255,255,255,.03);border-radius:18px;padding:12px}
+    .chartCard h4{margin:0 0 8px 0;font-size:12px;color:var(--muted);font-weight:900;letter-spacing:.02em}
+    .chartCanvas{width:100%;height:220px;border-radius:14px;background:rgba(0,0,0,.12);border:1px solid rgba(255,255,255,.06)}
+    .eventsRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .field{border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);padding:10px 12px;border-radius:14px;min-width:180px}
+    .select{border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);padding:10px 12px;border-radius:14px;min-width:180px}
+
+
+  /* Fix native <select>/<option> colors in some browsers */
+  body{color-scheme: dark;}
+  .select{background:rgba(10,18,32,.85);color:var(--text);}
+  .select option{background:rgba(10,18,32,.95);color:var(--text);}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo">BT</div>
+        <div class="hgroup">
+          <div class="title">BarrelTracker <span class="pill">v0.1 • standalone</span></div>
+          <div class="sub">Companion to NodeLab — import snapshot JSONs, track round count (incl. sighters), and rank barrels over life.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+        <button class="btn primary" id="btnImport">Import NodeLab Snapshot</button>
+        <button class="btn" id="btnFake">Generate Fake Day-0 Pack</button>
+        <button class="btn" id="btnExport">Export Tracker Data</button>
+        <button class="btn" id="btnImportTracker">Import Tracker Data</button>
+        <button class="btn danger" id="btnReset">Reset (local)</button>
+        <input id="fileInput" type="file" accept=".json,application/json"/>
+        <input id="fileImportTracker" type="file" accept=".json,application/json" style="display:none"/>
+      </div>
+    </header>
+
+    <div class="row">
+      <div class="col">
+        <div class="card">
+          <h3>Barrels</h3>
+          <div class="grid" id="barrelGrid"></div>
+          <div class="footer">
+            Assumptions locked: Barrel IDs <b>B1–B5</b>, service life <b>2000 rounds</b>, and <b>sighters count toward barrel rounds</b>.
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="card">
+          <h3>Import</h3>
+          <div class="drop" id="dropZone">
+            <strong>Drop NodeLab snapshot JSON here</strong>
+            <div class="hint">Or click <b>Import NodeLab Snapshot</b>. This stays local in your browser (uses localStorage).</div>
+          </div>
+
+          <div class="split">
+            <div class="tiny">Scoring: vertical-first, confidence-weighted (tunable later)</div>
+            <span class="pill" id="statusPill">Ready</span>
+          </div>
+
+          <table class="table" style="margin-top:10px">
+            <thead>
+              <tr>
+                <th style="width:90px">Barrel</th>
+                <th>Date</th>
+                <th style="width:110px">Rounds +</th>
+                <th style="width:120px">Vert (MOA)</th>
+                <th style="width:120px">SD (fps)</th>
+                <th style="width:120px">Confidence</th>
+              </tr>
+            </thead>
+            <tbody id="recentImports">
+              <tr><td class="mono" colspan="6">No imports yet.</td></tr>
+            </tbody>
+          </table>
+
+          <div class="footer">
+            Tip: For “Day-0”, shoot the same load at 1000y with 20 record shots per barrel, then export 5 snapshot JSON files from NodeLab and import them here.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h3>Leaderboards</h3>
+      <details class="card" style="margin-top:12px;background:rgba(255,255,255,.03)">
+        <summary style="cursor:pointer;font-weight:900;letter-spacing:.02em;color:var(--text)">Ranking tuning</summary>
+        <div class="tiny" style="margin-top:6px">Saved locally (browser storage) and included in Export Tracker Data. Changes re-rank instantly.</div>
+
+        <div class="eventsRow" style="margin-top:10px">
+          <label class="tiny" style="display:flex;flex-direction:column;gap:6px">Window (rounds)
+            <input class="field" id="tWin" type="number" min="50" step="10"/>
+          </label>
+          <label class="tiny" style="display:flex;flex-direction:column;gap:6px">Weight: Vertical
+            <input class="field" id="tWV" type="number" min="0" max="5" step="0.01"/>
+          </label>
+          <label class="tiny" style="display:flex;flex-direction:column;gap:6px">Weight: Mean Radius
+            <input class="field" id="tWMR" type="number" min="0" max="5" step="0.01"/>
+          </label>
+          <label class="tiny" style="display:flex;flex-direction:column;gap:6px">Weight: SD
+            <input class="field" id="tWSD" type="number" min="0" max="5" step="0.01"/>
+          </label>
+          <label class="tiny" style="display:flex;flex-direction:column;gap:6px">SD normalize ÷
+            <input class="field" id="tSDDiv" type="number" min="1" step="0.5"/>
+          </label>
+          <label class="tiny" style="display:flex;flex-direction:column;gap:6px">Confidence floor
+            <input class="field" id="tCFloor" type="number" min="0.05" max="1" step="0.01"/>
+          </label>
+          <label class="tiny" style="display:flex;flex-direction:column;gap:6px">Trend penalty (× per MOA/100)
+            <input class="field" id="tTrend" type="number" min="0" step="0.01"/>
+          </label>
+        </div>
+
+        <div class="eventsRow" style="margin-top:10px">
+          <button class="btn primary" id="btnApplyTuning">Apply</button>
+          <button class="btn" id="btnResetTuning">Reset defaults</button>
+          <div class="tiny" style="align-self:center">Weights don’t need to sum to 1. Missing MR/SD auto-renormalizes.</div>
+        </div>
+      </details>
+
+      <div class="split">
+        <div class="tiny">Current form = last 400 rounds (or all if fewer). Aging score needs ≥3 snapshots.</div>
+        <div class="tiny">Click a barrel card above for full timeline.</div>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width:90px">Barrel</th>
+            <th style="width:120px">Rounds</th>
+            <th style="width:170px">Current Form</th>
+            <th style="width:170px">Aging</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="leaderRows"></tbody>
+      </table>
+    </div>
+
+    <div class="footer">
+      Data storage: local only. No network calls. Export your tracker JSON occasionally for backups.
+    </div>
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="sheet" role="dialog" aria-modal="true">
+      <div class="sheetHead">
+        <div>
+          <div class="sheetTitle" id="modalTitle">Barrel</div>
+          <div class="sub" id="modalSub"></div>
+          <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap" id="modalBadges"></div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+          <button class="btn" id="btnClose">Close</button>
+        </div>
+      </div>
+
+      <div class="card" style="background:rgba(255,255,255,.03)">
+        <h3>Snapshot timeline</h3>
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="width:130px">Date</th>
+              <th style="width:130px">Round Count</th>
+              <th style="width:110px">Shots +</th>
+              <th style="width:120px">Vert (MOA)</th>
+              <th style="width:120px">MR (MOA)</th>
+              <th style="width:110px">SD (fps)</th>
+              <th style="width:120px">Confidence</th>
+              <th>Source</th>
+            </tr>
+          </thead>
+          <tbody id="modalTable"></tbody>
+        </table>
+      </div>
+
+
+      <div class="chartRow">
+        <div class="chartCard">
+          <h4>Vertical MOA vs Round Count</h4>
+          <canvas class="chartCanvas" id="chartVert"></canvas>
+          <div class="tiny" id="trendVert">Trend: —</div>
+        </div>
+        <div class="chartCard">
+          <h4>Velocity SD (fps) vs Round Count</h4>
+          <canvas class="chartCanvas" id="chartSD"></canvas>
+          <div class="tiny" id="trendSD">Trend: —</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px;background:rgba(255,255,255,.03)">
+        <h3>Lifecycle events</h3>
+        <div class="eventsRow">
+          <select class="select" id="evtType">
+            <option value="setback">Setback</option>
+            <option value="rethroat">Rethroat</option>
+            <option value="new_lot_powder">New powder lot</option>
+            <option value="new_lot_bullets">New bullet lot</option>
+            <option value="tuner_change">Tuner change</option>
+            <option value="scope_change">Scope change</option>
+            <option value="notes">Note</option>
+          </select>
+          <input class="field" id="evtRounds" type="number" min="0" step="1" placeholder="Round count (optional)"/>
+          <input class="field" id="evtNote" type="text" placeholder="Short note (optional)"/>
+          <button class="btn primary" id="btnAddEvent">Add event</button>
+        </div>
+        <table class="table" style="margin-top:10px">
+          <thead>
+            <tr>
+              <th style="width:130px">Date</th>
+              <th style="width:120px">Rounds</th>
+              <th style="width:160px">Type</th>
+              <th>Note</th>
+              <th style="width:90px"></th>
+            </tr>
+          </thead>
+          <tbody id="evtTable">
+            <tr><td class="mono" colspan="5">No events yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="footer">
+        Planned: charts (vertical vs rounds, confidence vs rounds), node drift (best charge vs rounds), lifecycle events (setback/rethroat markers).
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const LS_KEY = "barrelTracker_v1";
+  const BARREL_LIFE = 2000;
+  const RANKING = {
+    weights: { V: 0.55, MR: 0.25, SD: 0.20 },
+    sdNormDiv: 10.0,          // 10 fps SD ~= 1.0 normalized unit
+    confFloor: 0.35,          // below this, treat as very uncertain
+    trendPenaltyPer100: 0.25  // penalty multiplier (MOA/100 rounds)
+  };
+  const COUNT_SIGHTERS = true;
+
+  const el = (id) => document.getElementById(id);
+  const state = { data: null, selectedBarrel: null, tuning: null };
+
+  function nowISO() { return new Date().toISOString(); }
+  function persist(){ localStorage.setItem(LS_KEY, JSON.stringify(state.data)); }
+
+  function loadState() {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) { try { state.data = JSON.parse(raw); return; } catch (e) {} }
+    state.data = {
+      meta: { schema:"barreltracker.data", version:"1.0.0", createdAt: nowISO(),
+              barrelLifeRounds: BARREL_LIFE, countSightersAsRounds: COUNT_SIGHTERS, windowRounds: getTuning().windowRounds },
+      barrels: {
+        B1:{barrelId:"B1", rounds:0, snapshots:[], events:[]},
+        B2:{barrelId:"B2", rounds:0, snapshots:[], events:[]},
+        B3:{barrelId:"B3", rounds:0, snapshots:[], events:[]},
+        B4:{barrelId:"B4", rounds:0, snapshots:[], events:[]},
+        B5:{barrelId:"B5", rounds:0, snapshots:[], events:[]}
+      }
+    };
+    persist();
+  }
+
+  function setStatus(text, tone="ready") {
+    const p = el("statusPill");
+    p.textContent = text;
+    p.style.borderColor = tone==="bad" ? "rgba(255,92,122,.55)" : tone==="warn" ? "rgba(255,204,102,.55)" : "rgba(124,92,255,.45)";
+    p.style.background  = tone==="bad" ? "rgba(255,92,122,.12)" : tone==="warn" ? "rgba(255,204,102,.12)" : "rgba(124,92,255,.10)";
+  }
+
+  function get(obj, path, fallback=null) {
+    try { return path.split(".").reduce((a,k)=>a && a[k]!==undefined ? a[k] : undefined, obj) ?? fallback; }
+    catch { return fallback; }
+  }
+  function safeNum(x){ return (typeof x === "number" && isFinite(x)) ? x : null; }
+
+  function firstResultRow(snapshot){
+    const rows = get(snapshot, "results.rows", []);
+    if (!Array.isArray(rows) || !rows.length) return null;
+    return rows.find(r=>r.rank===1) || rows[0];
+  }
+
+  function extractRounds(snapshot){
+    const hinted = get(snapshot, "trackerHints.roundCount.totalBarrelRoundsThisSnapshot", null);
+    if (typeof hinted === "number" && hinted > 0) return hinted;
+
+    const dq = get(snapshot, "dataQuality.summary.totalShotsOnTargets", null);
+    if (typeof dq === "number" && dq > 0) return dq;
+
+    const used = get(snapshot, "dataQuality.summary.totalShotsUsedForScoring", null);
+    if (typeof used === "number" && used > 0) return used;
+
+    const t0 = get(snapshot, "pairing.targets.0", null);
+    if (t0) {
+      const shotsTotal = get(t0, "chronograph.shotsTotal", null);
+      const shotsUsed  = get(t0, "chronograph.shotsUsed", null);
+      if (COUNT_SIGHTERS && typeof shotsTotal === "number" && shotsTotal > 0) return shotsTotal;
+      if (typeof shotsUsed === "number" && shotsUsed > 0) return shotsUsed;
+    }
+    return null;
+  }
+
+  function expScore(x, x0){ if (x===null || x0<=0) return null; return Math.exp(-(x/x0)); }
+
+  function snapshotPerformance(snapshot){
+    const row = firstResultRow(snapshot);
+    if (!row) return null;
+
+    const V  = safeNum(get(row, "precision.verticalMOA", null));
+    const MR = safeNum(get(row, "precision.meanRadiusMOA", null));
+    const SD = safeNum(get(row, "velocity.sdFps", null));
+    const C  = safeNum(get(row, "score.confidence", null));
+
+    const V0=0.6, MR0=0.25, SD0=12;
+    const Sv = expScore(V, V0);
+    const Sp = expScore(MR, MR0);
+    const Ss = expScore(SD, SD0);
+
+    let wV=0.55, wP=0.25, wS=0.20;
+    if (Sp === null) { wV=0.65; wP=0.0; wS=0.35; }
+
+    const parts=[];
+    if (Sv!==null) parts.push(wV*Sv);
+    if (Sp!==null) parts.push(wP*Sp);
+    if (Ss!==null) parts.push(wS*Ss);
+    if (!parts.length) return null;
+
+    const S = parts.reduce((a,b)=>a+b,0);
+    const conf = (C===null) ? 0.5 : Math.max(0, Math.min(1, C));
+    const P = S * (0.35 + 0.65*conf);
+
+    return { P_snapshot:P, S, Sv, Sp, Ss, C:conf, V, MR, SD };
+  }
+
+  function computeCurrentForm(barrel){
+    const snaps = barrel.snapshots.slice().sort((a,b)=>a.roundCountEnd - b.roundCountEnd);
+    if (!snaps.length) return null;
+
+    const end = snaps[snaps.length-1].roundCountEnd;
+    const start = Math.max(0, end - getTuning().windowRounds);
+    const inWin = snaps.filter(s => s.roundCountEnd >= start);
+
+    let num=0, den=0;
+    for (const s of inWin) {
+      const p = s.metrics?.P_snapshot;
+      if (typeof p !== "number") continue;
+      const delta = end - s.roundCountEnd;
+      const tau = getTuning().windowRounds/2;
+      const wr = Math.exp(-(delta/tau));
+      const wn = Math.min(1, (s.shotsAdded||0)/20);
+      const w = wr*wn;
+      num += p*w; den += w;
+    }
+    if (den<=0) return null;
+    return num/den;
+  }
+
+  function computeAging(barrel){
+    const pts = barrel.snapshots
+      .map(s=>({x:s.roundCountEnd, y:s.metrics?.P_snapshot}))
+      .filter(p=>typeof p.x==="number" && typeof p.y==="number")
+      .sort((a,b)=>a.x-b.x);
+
+    if (pts.length < 3) return {score:null, note:"Need ≥3 snapshots"};
+
+    const n=pts.length;
+    const meanX = pts.reduce((a,p)=>a+p.x,0)/n;
+    const meanY = pts.reduce((a,p)=>a+p.y,0)/n;
+    let num=0, den=0;
+    for (const p of pts){ num += (p.x-meanX)*(p.y-meanY); den += (p.x-meanX)*(p.x-meanX); }
+    const m = den ? (num/den) : 0;
+
+    const m0 = -0.00025;
+    let A = 1 + (m/m0);
+    A = Math.max(0, Math.min(1, A));
+    return {score:A, note:`slope ${m.toExponential(2)} /round`};
+  }
+
+  function fmt(x,d=2){ if (x===null||x===undefined||!isFinite(x)) return "—"; return Number(x).toFixed(d); }
+  function fmtPct(x){ return (x===null||x===undefined||!isFinite(x)) ? "—" : Math.round(x*100) + "%"; }
+  function fmtDate(iso){
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"2-digit"});
+  }
+
+  function makeBadge(label, value, sub=null){
+    const span = document.createElement("span");
+    span.className = "badge";
+    let tone="warn";
+    if (value===null||value===undefined||!isFinite(value)) tone="warn";
+    else if (value>=0.70) tone="good";
+    else if (value>=0.55) tone="warn";
+    else tone="bad";
+
+    span.innerHTML = `<span class="dot ${tone}"></span><span>${label}: ${(value===null||value===undefined||!isFinite(value)) ? "—" : value.toFixed(3)}</span>`;
+    if (sub){
+      const extra = document.createElement("span");
+      extra.style.marginLeft="8px";
+      extra.style.opacity="0.8";
+      extra.style.fontFamily="var(--mono)";
+      extra.style.fontSize="11px";
+      extra.textContent=sub;
+      span.appendChild(extra);
+    }
+    return span;
+  }
+
+
+  function getLastSnapshot(barrel){
+    return barrel.snapshots.slice().sort((a,b)=>b.roundCountEnd-a.roundCountEnd)[0] || null;
+  }
+  function getTwistFromLast(barrel){
+    const last = getLastSnapshot(barrel);
+    // Stored in snapshot itself (raw) is not retained; we store metrics only. So we will store twist into snapshot record at import time.
+    return last?.twistIn ?? null;
+  }
+
+  function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
+
+  
+  const DEFAULT_TUNING = {
+    windowRounds: 400,
+    weights: { V: 0.55, MR: 0.25, SD: 0.20 },
+    sdNormDiv: 10.0,
+    confFloor: 0.35,
+    trendPenaltyPer100: 0.25
+  };
+
+  function getTuning(){ return state.tuning || DEFAULT_TUNING; }
+
+  function setTuning(t){
+    state.tuning = {
+      windowRounds: Math.max(50, Math.round(Number(t.windowRounds)||DEFAULT_TUNING.windowRounds)),
+      weights: {
+        V: Math.max(0, Number(t.weights?.V ?? DEFAULT_TUNING.weights.V)),
+        MR: Math.max(0, Number(t.weights?.MR ?? DEFAULT_TUNING.weights.MR)),
+        SD: Math.max(0, Number(t.weights?.SD ?? DEFAULT_TUNING.weights.SD))
+      },
+      sdNormDiv: Math.max(1, Number(t.sdNormDiv ?? DEFAULT_TUNING.sdNormDiv)),
+      confFloor: clamp(Number(t.confFloor ?? DEFAULT_TUNING.confFloor), 0.05, 1.0),
+      trendPenaltyPer100: Math.max(0, Number(t.trendPenaltyPer100 ?? DEFAULT_TUNING.trendPenaltyPer100))
+    };
+    persist();
+  }
+
+function snapshotCompositeScore(snap){
+    // Lower is better
+    const V = snap?.metrics?.V;
+    const MR = snap?.metrics?.MR;
+    const SD = snap?.metrics?.SD;
+    const conf = (snap?.metrics?.C ?? 0.7);
+
+    // Require at least vertical to score
+    if (typeof V !== "number" || !isFinite(V)) return null;
+
+    const mr = (typeof MR === "number" && isFinite(MR)) ? MR : null;
+    const sd = (typeof SD === "number" && isFinite(SD)) ? SD : null;
+
+        const tuning = getTuning();
+    const sdN = (sd === null) ? null : (sd / tuning.sdNormDiv);
+
+    // base sum with available terms (renormalize weights for missing)
+        const w = getTuning().weights;
+    let sumW = w.V;
+    let sum = w.V * V;
+
+    if (mr !== null){ sum += w.MR * mr; sumW += w.MR; }
+    if (sdN !== null){ sum += w.SD * sdN; sumW += w.SD; }
+
+    const base = sum / sumW;
+
+    // confidence penalty (lower confidence => larger multiplier)
+        const c = clamp(conf, getTuning().confFloor, 1.0);
+    const confMult = 1.0 / c;
+
+    return base * confMult;
+  }
+
+  function currentFormScore(barrel){
+    const snaps = (barrel.snapshots||[]).slice().sort((a,b)=>a.roundCountEnd-b.roundCountEnd);
+    if (!snaps.length) return {score:null, n:0};
+
+    const lastRounds = snaps[snaps.length-1].roundCountEnd;
+        const tuning = getTuning();
+    const minRounds = Math.max(0, lastRounds - tuning.windowRounds);
+
+    // exponential recency weight within window
+        const halfLife = getTuning().windowRounds / 2; // rounds
+    let num=0, den=0, n=0;
+    for (const s of snaps){
+      if (s.roundCountEnd < minRounds) continue;
+      const sc = snapshotCompositeScore(s);
+      if (sc === null) continue;
+      const age = (lastRounds - s.roundCountEnd);
+      const w = Math.pow(0.5, age / halfLife);
+      num += w * sc;
+      den += w;
+      n += 1;
+    }
+    if (!den) return {score:null, n:0};
+    return {score: num/den, n};
+  }
+
+  function trendPenalty(barrel){
+    // trend in vertical MOA over last getTuning().windowRounds; positive slope => penalty
+    const snaps = (barrel.snapshots||[]).slice().sort((a,b)=>a.roundCountEnd-b.roundCountEnd);
+    if (snaps.length < 2) return {penalty:0, slopePer100:null};
+
+    const lastRounds = snaps[snaps.length-1].roundCountEnd;
+        const tuning = getTuning();
+    const minRounds = Math.max(0, lastRounds - tuning.windowRounds);
+
+    const pts = snaps
+      .filter(s=>s.roundCountEnd >= minRounds)
+      .map(s=>({x:s.roundCountEnd, y:s.metrics?.V}))
+      .filter(p=>typeof p.x==="number" && typeof p.y==="number" && isFinite(p.x) && isFinite(p.y));
+
+    if (pts.length < 2) return {penalty:0, slopePer100:null};
+
+    const n=pts.length;
+    const mx = pts.reduce((a,p)=>a+p.x,0)/n;
+    const my = pts.reduce((a,p)=>a+p.y,0)/n;
+    let num=0, den=0;
+    for (const p of pts){ num += (p.x-mx)*(p.y-my); den += (p.x-mx)*(p.x-mx); }
+    if (!den) return {penalty:0, slopePer100:null};
+    const m = num/den; // MOA per round
+    const slopePer100 = m * 100;
+
+        const penalty = (slopePer100 > 0) ? (slopePer100 * getTuning().trendPenaltyPer100) : 0;
+    return {penalty, slopePer100};
+  }
+
+  function barrelRankSummary(barrel){
+    const cf = currentFormScore(barrel);
+    const tr = trendPenalty(barrel);
+    const score = (cf.score === null) ? null : (cf.score + tr.penalty);
+    return {score, n: cf.n, slopePer100: tr.slopePer100, trendPenalty: tr.penalty};
+  }
+
+
+  function renderBarrels(){
+    const grid = el("barrelGrid");
+    grid.innerHTML="";
+    for (const id of ["B1","B2","B3","B4","B5"]) {
+      const b = state.data.barrels[id];
+      const rs = barrelRankSummary(b);
+      const last = b.snapshots.slice().sort((a,b)=>b.roundCountEnd-a.roundCountEnd)[0] || null;
+      const current = computeCurrentForm(b);
+      const perf = last?.metrics?.P_snapshot ?? null;
+      const rounds = b.rounds || 0;
+      const pct = Math.min(100, (rounds / BARREL_LIFE) * 100);
+
+      const card = document.createElement("div");
+      card.className="bcard";
+      card.addEventListener("click", ()=>openBarrel(id));
+      card.innerHTML = `
+                <div class="bid big">${id}</div>
+                <div class="tiny">Last test: <b>${last ? fmtDate(last.exportedAt) : "—"}</b> • 1000y • Twist: <b>${getTwistFromLast(b)===null ? "—" : getTwistFromLast(b).toFixed(1) + "\""}</b></div>
+          <div class="tiny">Rank score: <b>${rs.score===null ? "—" : rs.score.toFixed(3)}</b> • Trend: <b>${rs.slopePer100===null ? "—" : (rs.slopePer100>=0?"+":"") + rs.slopePer100.toFixed(3) + " MOA/100"}</b></div>
+        </div>
+        <div class="bar"><div style="width:${pct.toFixed(1)}%"></div></div>
+        <div class="metric">
+          <div class="mitem"><div class="k">Current Form</div><div class="v">${current===null ? "—" : fmt(current,3)}</div></div>
+          <div class="mitem"><div class="k">Last Perf</div><div class="v">${perf===null ? "—" : fmt(perf,3)}</div></div>
+          <div class="mitem"><div class="k">Snapshots</div><div class="v">${b.snapshots.length}</div></div>
+        </div>
+      `;
+      grid.appendChild(card);
+    }
+  }
+
+  function renderRecentImports(){
+    const tbody = el("recentImports");
+    const rows=[];
+    for (const id of ["B1","B2","B3","B4","B5"]) {
+      for (const s of state.data.barrels[id].snapshots) rows.push({barrelId:id, ...s});
+    }
+    rows.sort((a,b)=>(b.importedAt||"").localeCompare(a.importedAt||""));
+    const top = rows.slice(0,8);
+    if (!top.length) { tbody.innerHTML=`<tr><td class="mono" colspan="6">No imports yet.</td></tr>`; return; }
+
+    tbody.innerHTML = top.map(r=>`
+      <tr>
+        <td class="mono">${r.barrelId}</td>
+        <td>${fmtDate(r.exportedAt)}</td>
+        <td class="mono">${r.shotsAdded ?? "—"}</td>
+        <td class="mono">${r.metrics?.V===null ? "—" : fmt(r.metrics.V,2)}</td>
+        <td class="mono">${r.metrics?.SD===null ? "—" : fmt(r.metrics.SD,1)}</td>
+        <td class="mono">${r.metrics?.C===null ? "—" : fmtPct(r.metrics.C)}</td>
+      </tr>
+    `).join("");
+
+  }
+
+  function renderLeaderboards(){
+    const tbody = el("leaderRows");
+    const rows=[];
+    for (const id of ["B1","B2","B3","B4","B5"]) {
+      const b=state.data.barrels[id];
+      const current = computeCurrentForm(b);
+      const aging = computeAging(b);
+      rows.push({id, rounds:b.rounds||0, current, agingScore:aging.score, agingNote:aging.note});
+    }
+    rows.sort((a,b)=>((b.current===null?-1:b.current) - (a.current===null?-1:a.current)));
+
+    tbody.innerHTML = rows.map(r=>{
+      const note = r.current===null ? "Import a snapshot to rank" : r.agingNote;
+      return `
+        <tr>
+          <td class="mono"><b>${r.id}</b></td>
+          <td class="mono">${r.rounds} / ${BARREL_LIFE}</td>
+          <td class="mono">${r.current===null ? "—" : fmt(r.current,3)}</td>
+          <td class="mono">${r.agingScore===null ? "—" : fmt(r.agingScore,3)}</td>
+          <td>${note}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  function renderAll(){ renderBarrels(); renderRecentImports(); renderLeaderboards(); }
+
+
+  function linearTrend(xs, ys){
+    const pts = xs.map((x,i)=>({x, y:ys[i]})).filter(p=>typeof p.x==="number" && typeof p.y==="number" && isFinite(p.x) && isFinite(p.y));
+    if (pts.length < 2) return null;
+    const n=pts.length;
+    const mx = pts.reduce((a,p)=>a+p.x,0)/n;
+    const my = pts.reduce((a,p)=>a+p.y,0)/n;
+    let num=0, den=0;
+    for (const p of pts){ num += (p.x-mx)*(p.y-my); den += (p.x-mx)*(p.x-mx); }
+    if (!den) return null;
+    const m = num/den;
+    const b = my - m*mx;
+    return {m, b, n};
+  }
+
+  function setupCanvas(canvas){
+    // Match device pixel ratio for crisp lines
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.max(300, Math.floor(rect.width));
+    const h = Math.max(180, Math.floor(rect.height));
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    return {ctx, w, h};
+  }
+
+  function drawChart(canvasId, series, events, yLabel){
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const {ctx, w:W, h:H} = setupCanvas(canvas);
+
+    ctx.clearRect(0,0,W,H);
+
+    const padL=46, padR=14, padT=12, padB=32;
+
+    if (!series || !series.length){
+      ctx.globalAlpha=0.85;
+      ctx.font="14px var(--sans)";
+      ctx.fillStyle="rgba(169,182,211,.9)";
+      ctx.fillText("No data yet", padL, H/2);
+      ctx.globalAlpha=1;
+      return;
+    }
+
+    const xs = series.map(p=>p.x);
+    const ys = series.map(p=>p.y);
+
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    let minY = Math.min(...ys), maxY = Math.max(...ys);
+    if (minY === maxY){ minY -= 0.1; maxY += 0.1; }
+    const yPad = (maxY-minY)*0.12;
+    minY -= yPad; maxY += yPad;
+
+    const xMap = (x)=> padL + ( (x-minX) / (maxX-minX || 1) ) * (W-padL-padR);
+    const yMap = (y)=> padT + (1 - ( (y-minY) / (maxY-minY || 1) )) * (H-padT-padB);
+
+    // Axes
+    ctx.strokeStyle="rgba(255,255,255,.12)";
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(padL, padT);
+    ctx.lineTo(padL, H-padB);
+    ctx.lineTo(W-padR, H-padB);
+    ctx.stroke();
+
+    // Y grid + labels
+    ctx.fillStyle="rgba(169,182,211,.9)";
+    ctx.font="12px var(--mono)";
+    const ticks = 4;
+    for (let i=0;i<=ticks;i++){
+      const t = i/ticks;
+      const yv = minY + (1-t)*(maxY-minY);
+      const yy = yMap(yv);
+      ctx.strokeStyle="rgba(255,255,255,.07)";
+      ctx.beginPath();
+      ctx.moveTo(padL, yy);
+      ctx.lineTo(W-padR, yy);
+      ctx.stroke();
+      ctx.fillText(yv.toFixed(2), 6, yy+4);
+    }
+
+    // Events as vertical lines
+    if (events && events.length){
+      ctx.strokeStyle="rgba(124,92,255,.28)";
+      for (const e of events){
+        if (typeof e.rounds !== "number" || !isFinite(e.rounds)) continue;
+        if (e.rounds < minX || e.rounds > maxX) continue;
+        const xx = xMap(e.rounds);
+        ctx.beginPath();
+        ctx.moveTo(xx, padT);
+        ctx.lineTo(xx, H-padB);
+        ctx.stroke();
+      }
+    }
+
+    // Series line
+    ctx.strokeStyle="rgba(55,214,122,.85)";
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    series.forEach((p,i)=>{
+      const xx=xMap(p.x), yy=yMap(p.y);
+      if (i===0) ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy);
+    });
+    ctx.stroke();
+
+    // Points
+    ctx.fillStyle="rgba(231,238,252,.95)";
+    for (const p of series){
+      const xx=xMap(p.x), yy=yMap(p.y);
+      ctx.beginPath();
+      ctx.arc(xx,yy,3,0,Math.PI*2);
+      ctx.fill();
+    }
+
+    // Labels
+    ctx.fillStyle="rgba(169,182,211,.9)";
+    ctx.font="12px var(--sans)";
+    ctx.fillText("Rounds", W/2-18, H-10);
+    ctx.fillText(yLabel, padL+6, padT+12);
+  }
+
+  function renderEventsTable(barrel){
+    const tb = document.getElementById("evtTable");
+    if (!tb) return;
+    const events = (barrel.events||[]).slice().sort((a,b)=>(b.at||"").localeCompare(a.at||""));
+    if (!events.length){
+      tb.innerHTML = `<tr><td class="mono" colspan="5">No events yet.</td></tr>`;
+      return;
+    }
+    const typeLabel = (t)=>({
+      setback:"Setback",
+      rethroat:"Rethroat",
+      new_lot_powder:"New powder lot",
+      new_lot_bullets:"New bullet lot",
+      tuner_change:"Tuner change",
+      scope_change:"Scope change",
+      notes:"Note"
+    }[t] || t);
+
+    tb.innerHTML = events.map((e, idx)=>`
+      <tr>
+        <td class="mono">${fmtDate(e.at)}</td>
+        <td class="mono">${(typeof e.rounds==="number" && isFinite(e.rounds)) ? e.rounds : "—"}</td>
+        <td>${typeLabel(e.type)}</td>
+        <td>${(e.note||"")}</td>
+        <td><button class="btn danger" data-eidx="${idx}">Del</button></td>
+      </tr>
+    `).join("");
+
+    tb.querySelectorAll("button[data-eidx]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const i = Number(btn.getAttribute("data-eidx"));
+        const del = events[i];
+        barrel.events = (barrel.events||[]).filter(x=>!(x.at===del.at && x.type===del.type && (x.note||"") === (del.note||"") && x.rounds===del.rounds));
+        persist();
+        renderEventsTable(barrel);
+        drawChartsForBarrel(barrel);
+      });
+    });
+  }
+
+  function drawChartsForBarrel(barrel){
+    const snaps = (barrel.snapshots||[]).slice().sort((a,b)=>a.roundCountEnd-b.roundCountEnd);
+    const seriesV = snaps
+      .map(s=>({x:s.roundCountEnd, y:s.metrics?.V}))
+      .filter(p=>typeof p.x==="number" && typeof p.y==="number" && isFinite(p.x) && isFinite(p.y));
+    const seriesSD = snaps
+      .map(s=>({x:s.roundCountEnd, y:s.metrics?.SD}))
+      .filter(p=>typeof p.x==="number" && typeof p.y==="number" && isFinite(p.x) && isFinite(p.y));
+
+    drawChart("chartVert", seriesV, barrel.events||[], "Vert (MOA)");
+    drawChart("chartSD", seriesSD, barrel.events||[], "SD (fps)");
+
+    const tv = linearTrend(seriesV.map(p=>p.x), seriesV.map(p=>p.y));
+    const ts = linearTrend(seriesSD.map(p=>p.x), seriesSD.map(p=>p.y));
+    const tVertEl = document.getElementById("trendVert");
+    const tSDEl = document.getElementById("trendSD");
+    if (tVertEl){
+      tVertEl.textContent = tv ? `Trend: ${(tv.m*100).toFixed(3)} MOA per 100 rounds (n=${tv.n})` : "Trend: —";
+    }
+    if (tSDEl){
+      tSDEl.textContent = ts ? `Trend: ${(ts.m*100).toFixed(2)} fps SD per 100 rounds (n=${ts.n})` : "Trend: —";
+    }
+  }
+
+  function openBarrel(id){
+    state.selectedBarrel=id;
+    const b=state.data.barrels[id];
+    el("modal").classList.add("open");
+    el("modalTitle").textContent = `Barrel ${id}`;
+    const twist = getTwistFromLast(b);
+    const rs = barrelRankSummary(b);
+    el("modalSub").textContent = `Rounds: ${b.rounds} / ${BARREL_LIFE} • Twist: ${twist===null ? "—" : twist.toFixed(1) + "\"" } • Rank score: ${rs.score===null ? "—" : rs.score.toFixed(3)} • Trend: ${rs.slopePer100===null ? "—" : (rs.slopePer100>=0?"+":"") + rs.slopePer100.toFixed(3) + " MOA/100"} • Window: last ${getTuning().windowRounds} rounds`;
+
+    const badges = el("modalBadges");
+    badges.innerHTML="";
+    const current = computeCurrentForm(b);
+    const aging = computeAging(b);
+    badges.appendChild(makeBadge("Current", current));
+    badges.appendChild(makeBadge("Aging", aging.score, aging.note));
+
+    const table = el("modalTable");
+    const snaps = b.snapshots.slice().sort((a,b)=>b.roundCountEnd-a.roundCountEnd);
+    if (!snaps.length) { table.innerHTML=`<tr><td class="mono" colspan="8">No snapshots yet for ${id}.</td></tr>`; return; }
+
+    table.innerHTML = snaps.map(s=>`
+      <tr>
+        <td class="mono">${fmtDate(s.exportedAt)}</td>
+        <td class="mono">${s.roundCountStart} → ${s.roundCountEnd}</td>
+        <td class="mono">${s.shotsAdded ?? "—"}</td>
+        <td class="mono">${s.metrics?.V===null ? "—" : fmt(s.metrics.V,2)}</td>
+        <td class="mono">${s.metrics?.MR===null ? "—" : fmt(s.metrics.MR,2)}</td>
+        <td class="mono">${s.metrics?.SD===null ? "—" : fmt(s.metrics.SD,1)}</td>
+        <td class="mono">${s.metrics?.C===null ? "—" : fmtPct(s.metrics.C)}</td>
+        <td class="mono">${(s.sourceName||"snapshot").slice(0,60)}</td>
+      </tr>
+    `).join("");
+  }
+
+  function closeModal(){ el("modal").classList.remove("open"); state.selectedBarrel=null; }
+
+  async function readFile(file){
+    return new Promise((resolve,reject)=>{
+      const fr=new FileReader();
+      fr.onload=()=>resolve(fr.result);
+      fr.onerror=reject;
+      fr.readAsText(file);
+    });
+  }
+
+  function importSnapshotObject(snapshot, filename="snapshot.json"){
+    const barrelId = get(snapshot, "context.hardware.barrelId", null);
+    if (!barrelId || !state.data.barrels[barrelId]) {
+      setStatus("Import failed: missing/unknown barrelId", "bad");
+      alert("Snapshot is missing context.hardware.barrelId (or it's not B1–B5). Add it in NodeLab export context, then re-export.");
+      return;
+    }
+
+    const b = state.data.barrels[barrelId];
+
+    const roundsAdded = extractRounds(snapshot);
+    if (typeof roundsAdded !== "number" || roundsAdded <= 0) {
+      setStatus("Import failed: could not determine rounds", "bad");
+      alert("Couldn't determine rounds from snapshot. Ensure trackerHints.roundCount.totalBarrelRoundsThisSnapshot or dataQuality.summary.totalShotsOnTargets exists.");
+      return;
+    }
+
+    const perf = snapshotPerformance(snapshot);
+    if (!perf) setStatus("Imported (missing metrics)", "warn");
+
+    // b already defined above
+    const start = b.rounds;
+    const end = b.rounds + roundsAdded;
+
+    const exportedAt = get(snapshot, "export.exportedAt", null) || nowISO();
+    const twistIn = get(snapshot, "context.hardware.barrelSpecs.twistIn", null);
+    b.snapshots.push({
+      importedAt: nowISO(),
+      exportedAt,
+      shotsAdded: roundsAdded,
+      roundCountStart: start,
+      roundCountEnd: end,
+      sourceName: filename,
+      twistIn: (typeof twistIn === "number" ? twistIn : null),
+      metrics: perf
+    });
+    b.rounds = end;
+    persist();
+    setStatus(`Imported ${barrelId} (+${roundsAdded} rounds)`, "ready");
+    renderAll();
+  initTuningUI();
+  }
+
+  async function handleFiles(files){
+    if (!files || !files.length) return;
+    setStatus("Importing…", "warn");
+    for (const f of files) {
+      try {
+        const txt = await readFile(f);
+        const obj = JSON.parse(txt);
+        importSnapshotObject(obj, f.name);
+      } catch (e) {
+        console.error(e);
+        setStatus("Import failed (see error)", "bad");
+        alert(`Import failed for ${f.name}. Ensure it's valid JSON.
+
+${e}`);
+      }
+    }
+  }
+
+  function download(filename, text){
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([text],{type:"application/json"}));
+    a.download=filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},0);
+  }
+
+  
+  function deepClone(obj){ return JSON.parse(JSON.stringify(obj)); }
+
+  function mergeUniqueByKey(dstArr, srcArr, keyFn){
+    const seen = new Set(dstArr.map(keyFn));
+    for (const it of srcArr){
+      const k = keyFn(it);
+      if (!seen.has(k)){ dstArr.push(it); seen.add(k); }
+    }
+  }
+
+  function mergeBarrel(dst, srcB){
+    dst.snapshots = dst.snapshots || [];
+    dst.events = dst.events || [];
+    mergeUniqueByKey(dst.snapshots, (srcB.snapshots||[]), (s)=>`${s.exportedAt||""}|${s.roundCountEnd||""}|${s.barrelId||""}`);
+    mergeUniqueByKey(dst.events, (srcB.events||[]), (e)=>`${e.at||""}|${e.type||""}|${e.note||""}`);
+    dst.rounds = Math.max(dst.rounds||0, srcB.rounds||0);
+  }
+
+  function importTrackerFromObject(obj, mode){
+    // Accept wrapped export {schema, exportedAt, tuning, data} OR legacy {barrels,...}
+    const payload = (obj && obj.data && obj.schema && (obj.schema.name||"").includes("barreltracker")) ? obj : {data: obj, tuning: null};
+    if (!payload.data || !payload.data.barrels) throw new Error("Not a BarrelTracker export (missing data.barrels)");
+    if (mode === "overwrite"){
+      state.data = deepClone(payload.data);
+      state.tuning = payload.tuning || state.tuning;
+    } else {
+      if (!state.data) state.data = deepClone(payload.data);
+      else{
+        for (const id of Object.keys(payload.data.barrels)){
+          if (!state.data.barrels[id]) state.data.barrels[id] = deepClone(payload.data.barrels[id]);
+          else mergeBarrel(state.data.barrels[id], payload.data.barrels[id]);
+        }
+      }
+      if (payload.tuning) state.tuning = payload.tuning;
+    }
+    persist();
+    initTuningUI && initTuningUI();
+    renderAll();
+    setStatus(`Imported tracker (${mode})`, "ready");
+  }
+
+function exportTracker(){
+    const out = JSON.stringify({schema:{name:"barreltracker.export",version:"1.1.0"}, exportedAt:new Date().toISOString(), tuning:getTuning(), data:state.data}, null, 2);
+    const ts = new Date().toISOString().replaceAll(":","").replace(".","").replace("Z","Z");
+    download(`BarrelTracker_export_${ts}.json`, out);
+    setStatus("Exported tracker JSON", "ready");
+  }
+
+  function resetAll(){
+    if (!confirm("Reset BarrelTracker local data? Export first if you want a backup.")) return;
+    localStorage.removeItem(LS_KEY);
+  
+  function migrate(){
+    for (const id of ["B1","B2","B3","B4","B5"]){
+      const b = state.data.barrels[id];
+      if (!b.events) b.events = [];
+      if (!b.snapshots) b.snapshots = [];
+      for (const s of b.snapshots){
+        if (s.twistIn === undefined) s.twistIn = null;
+      }
+    }
+    persist();
+  }
+
+  loadState();
+    renderAll();
+    setStatus("Reset complete", "ready");
+  }
+
+  
+  function initTuningUI(){
+    const t = getTuning();
+    const setVal = (id, v)=>{ const el=document.getElementById(id); if (el) el.value = v; };
+    setVal("tWin", t.windowRounds);
+    setVal("tWV", t.weights.V);
+    setVal("tWMR", t.weights.MR);
+    setVal("tWSD", t.weights.SD);
+    setVal("tSDDiv", t.sdNormDiv);
+    setVal("tCFloor", t.confFloor);
+    setVal("tTrend", t.trendPenaltyPer100);
+
+    const applyBtn = document.getElementById("btnApplyTuning");
+    const resetBtn = document.getElementById("btnResetTuning");
+
+    if (applyBtn && !applyBtn.__wired){
+      applyBtn.__wired = true;
+      applyBtn.addEventListener("click", ()=>{
+        const read = (id)=>document.getElementById(id)?.value;
+        setTuning({
+          windowRounds: Number(read("tWin")),
+          weights: { V: Number(read("tWV")), MR: Number(read("tWMR")), SD: Number(read("tWSD")) },
+          sdNormDiv: Number(read("tSDDiv")),
+          confFloor: Number(read("tCFloor")),
+          trendPenaltyPer100: Number(read("tTrend"))
+        });
+        setStatus("Applied ranking tuning", "ready");
+        renderAll();
+      });
+    }
+
+    if (resetBtn && !resetBtn.__wired){
+      resetBtn.__wired = true;
+      resetBtn.addEventListener("click", ()=>{
+        state.tuning = null;
+        persist();
+        initTuningUI();
+        setStatus("Reset tuning to defaults", "ready");
+        renderAll();
+      });
+    }
+  }
+
+// Wire up
+  el("btnImport").addEventListener("click", ()=>el("fileInput").click());
+  el("btnFake").addEventListener("click", generateFakePack);
+  el("fileInput").addEventListener("change", (e)=>handleFiles(e.target.files));
+  el("btnExport").addEventListener("click", exportTracker);
+  el("btnImportTracker").addEventListener("click", ()=> el("fileImportTracker").click());
+  el("fileImportTracker").addEventListener("change", async (e)=>{
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    try{
+      const txt = await f.text();
+      const obj = JSON.parse(txt);
+      const mode = confirm("Import mode:\n\nOK = MERGE into current tracker\nCancel = OVERWRITE current tracker") ? "merge" : "overwrite";
+      importTrackerFromObject(obj, mode);
+    }catch(err){
+      console.error(err);
+      alert("Import failed. Ensure this is a BarrelTracker export JSON.");
+    }finally{
+      e.target.value = "";
+    }
+  });
+
+  el("btnReset").addEventListener("click", resetAll);
+
+  el("btnClose").addEventListener("click", closeModal);
+  el("modal").addEventListener("click", (e)=>{ if (e.target===el("modal")) closeModal(); });
+  window.addEventListener("keydown", (e)=>{ if (e.key==="Escape") closeModal(); });
+
+  const dz = el("dropZone");
+  dz.addEventListener("dragover", (e)=>{ e.preventDefault(); dz.style.borderColor="rgba(55,214,122,.55)"; });
+  dz.addEventListener("dragleave",(e)=>{ e.preventDefault(); dz.style.borderColor="rgba(124,92,255,.45)"; });
+  dz.addEventListener("drop",(e)=>{ e.preventDefault(); dz.style.borderColor="rgba(124,92,255,.45)"; handleFiles(e.dataTransfer.files); });
+
+
+  // --- Fake data generator (for testing while waiting on real Day-0) ---
+  function downloadText(filename, text, mime="application/json"){
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([text],{type:mime}));
+    a.download=filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},0);
+  }
+
+  function genFakeSnapshot(barrelId){
+    const iso = new Date().toISOString();
+    // Small random but plausible baseline values
+    const rand = (a,b)=> (a + Math.random()*(b-a));
+    const vert = Number(rand(0.46,0.68).toFixed(2));
+    const horiz = Number(rand(0.18,0.30).toFixed(2));
+    const mr = Number(rand(0.18,0.28).toFixed(2));
+    const sd = Number(rand(8.0,14.0).toFixed(1));
+    const es = Number((sd*rand(3.0,4.2)).toFixed(1));
+    const meanV = Number(rand(2875,2905).toFixed(1));
+    const conf = Number(rand(0.55,0.80).toFixed(2));
+
+    return {
+      schema:{name:"nodelab.snapshot",version:"1.0.0"},
+      export:{exportedAt:iso, app:{name:"NodeLab",version:"2.4.3",build:"standalone",gitCommit:null}, timezone:"-0700",
+              notes:"FAKE Day-0 snapshot (generated in BarrelTracker for testing)."},
+      context:{
+        range:{distanceYards:1000, disciplineHint:"F-Class", units:{angles:"MOA",linear:"mm",velocity:"fps"}},
+        hardware:{rifleId:"RIFLE_01", barrelId, barrelSpecs:{twistIn: ({B1:8.5,B2:9.0,B3:9.0,B4:8.5,B5:8.5}[barrelId] ?? null)}, chamber:{reamerId:"284_WILSON", reamerDoc:{filename:"284 WILSON.pdf", sha256:null}}},
+        ammoRecipe:{
+          recipeId:"RECIPE_BASELINE",
+          name:"Day-0 baseline (same load all barrels)",
+          bullet:{make:"Berger",model:"Hybrid Target 28407 Current Lot",weightGr:180},
+          powder:{name:"Alliant Reloder 16",lot:"2021-08-29"},
+          primer:{name:"",lot:""},
+          brass:{make:"Lapua",lot:"",firings:0},
+          seating:{coalIn:3.320,jumpIn:0.0,notes:""}
+        },
+        environment:{tempF:null,pressureInHg:null,humidityPct:null,densityAltitudeFt:null,windNotes:""}
+      },
+      pairing:{
+        mode:"manual",
+        targets:[{
+          targetKey:`SM:Day0:${barrelId}:target-01`,
+          shotMarker:{sourceFile:"FAKE_ShotMarker.csv",sessionLabel:"Day0",targetLabel:"Target 1",tags:{sightersExcluded:true}},
+          chronograph:{sourceFile:"FAKE_Chrono.xls",device:"Garmin",stringLabel:"A",shotsTotal:22,shotsUsed:20,excluded:[{reason:"sighter",count:2}]}
+        }],
+        pairingCompleteness:{targets:1,paired:1,unpaired:0}
+      },
+      dataQuality:{warnings:["FAKE_DATA"],errors:[],summary:{totalTargets:1,totalShotsOnTargets:22,totalShotsUsedForScoring:20,sightersExcluded:2}},
+      results:{
+        rankingBasis:{verticalPriority:true, confidenceWeighted:true},
+        rows:[{
+          rowId:`${barrelId}_ROW_0001`,
+          rank:1,
+          charge:{label:"Charge 1",grains:53.05,stepIndex:0},
+          shots:{onTarget:22,used:20,excluded:{sighter:2,other:0}},
+          precision:{meanRadiusMOA:mr, extremeSpreadMOA:null, verticalMOA:vert, horizontalMOA:horiz},
+          velocity:{meanFps:meanV, sdFps:sd, esFps:es},
+          score:{raw:null, score100:null, confidence:conf},
+          diagnostics:[{code:"LOW_SAMPLE",severity:"info",detail:"Single target only (Day-0 baseline)"}],
+          provenance:{targetKey:`SM:Day0:${barrelId}:target-01`, chronoSourceFile:"FAKE_Chrono.xls"}
+        }]
+      },
+      aggregates:{byCharge:[{chargeLabel:"Charge 1",nTargets:1,nShotsUsed:20,precision:{verticalMOA:vert,meanRadiusMOA:mr},velocity:{sdFps:sd},score:{score100:null,confidence:conf}}]},
+      trackerHints:{roundCount:{shotsFiredThisSnapshot:20,includeSightersInBarrelCount:true,totalBarrelRoundsThisSnapshot:22},
+                    suggestedLabels:{sessionTag:"Day-0-1000y",barrelLifeAssumedRounds:2000}}
+    };
+  }
+
+  function generateFakePack(){
+    const ids = ["B1","B2","B3","B4","B5"];
+    // Download the five snapshots
+    for (const id of ids){
+      const snap = genFakeSnapshot(id);
+      downloadText(`FAKE_Day0_NodeLabSnapshot_${id}.json`, JSON.stringify(snap, null, 2));
+    }
+    setStatus("Generated fake pack (downloaded 5 JSONs)", "ready");
+  }
+
+  loadState();
+  if (typeof migrate === "function") migrate();
+  renderAll();
+  setStatus("Ready", "ready");
+})();
+</script>
+</body>
+</html>
